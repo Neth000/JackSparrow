@@ -1,0 +1,2124 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trener słówek - JackSparrow</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        },
+                        slate: {
+                            850: '#131c2e',
+                            950: '#070b14'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .hidden {
+            display: none !important;
+        }
+        body {
+            background-color: #070b14;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.25s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- TOP HEADER -->
+    <header class="w-full bg-slate-900/90 border-b border-slate-800/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+            
+            <!-- Logo & Brand -->
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-600/30 font-black text-sm tracking-wider">
+                    JS
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm sm:text-base text-slate-100 leading-tight flex items-center gap-1.5">
+                        Trener słówek <span class="text-brand-400 font-semibold">JackSparrow</span>
+                    </h1>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="text-[10px] uppercase font-bold text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded border border-brand-500/20">
+                            Oxford Repetytorium
+                        </span>
+                        <span id="header-active-chapter-pill" class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                            Wszystkie rozdziały
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile & Szybka Powtórka & Tabs -->
+            <div class="flex items-center gap-2">
+                <span id="save-status-indicator" class="hidden md:flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2 py-1 rounded-lg">
+                    <i class="fa-solid fa-floppy-disk text-[9px]"></i>
+                    <span>Autozapis aktywny</span>
+                </span>
+
+                <button onclick="openStudentModal()" id="btn-student-badge" title="Zmień numer z dziennika"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-brand-400 border border-slate-700 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-id-badge text-xs"></i>
+                    <span id="label-student-nr">Nr --</span>
+                </button>
+
+                <button onclick="startQuickReview(activeChapter)" title="Uruchom szybką powtórkę 30 pytań"
+                    class="hidden sm:flex px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500/20 to-brand-500/20 hover:from-amber-500/30 hover:to-brand-500/30 text-amber-300 border border-amber-500/30 items-center gap-1.5 transition">
+                    <i class="fa-solid fa-bolt text-amber-400 text-xs"></i>
+                    <span>Szybka powtórka</span>
+                </button>
+
+                <!-- View Switcher Tabs -->
+                <div class="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+                    <button onclick="switchTab('training')" id="tab-btn-training" 
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-brand-600 text-white shadow-sm">
+                        <i class="fa-solid fa-graduation-cap text-xs"></i>
+                        <span class="hidden sm:inline">Trening</span>
+                    </button>
+                    <button onclick="switchTab('chapters')" id="tab-btn-chapters" 
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+                        <i class="fa-solid fa-layer-group text-xs"></i>
+                        <span class="hidden sm:inline">Rozdziały</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- VIEW 1: TRENING (QUIZ 4 OPCJE A/B/C/D) -->
+    <main id="view-training" class="flex-1 max-w-2xl w-full mx-auto px-4 py-6 sm:py-8 flex flex-col justify-center">
+
+        <!-- Quick Review Progress Banner -->
+        <div id="quick-review-banner" class="hidden mb-4 p-3 bg-gradient-to-r from-slate-900 to-slate-850 border border-amber-500/30 rounded-xl">
+            <div class="flex items-center justify-between text-xs font-semibold mb-1.5">
+                <span class="text-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt"></i> ⚡ Szybka powtórka (30 pytań)
+                </span>
+                <div class="flex items-center gap-2">
+                    <span id="quick-review-counter" class="text-slate-300">Pytanie 1 / 30</span>
+                    <button onclick="exitQuickReview()" class="text-[10px] text-slate-400 hover:text-rose-400 underline ml-2">Przerwij</button>
+                </div>
+            </div>
+            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                <div id="quick-review-progress-bar" class="bg-gradient-to-r from-amber-400 to-brand-500 h-full transition-all duration-300" style="width: 3.33%"></div>
+            </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="flex items-center justify-between gap-3 mb-4 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">Rozdział:</span>
+                <span id="training-chapter-name" class="text-xs font-semibold text-slate-200">Wszystkie rozdziały</span>
+                <span id="training-progress-fraction" class="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded border border-brand-500/20 font-mono">0/0</span>
+            </div>
+            <button onclick="toggleDirection()" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-brand-400 border border-slate-700 flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-arrow-right-arrow-left text-[10px]"></i>
+                <span id="label-direction">EN ➔ PL</span>
+            </button>
+        </div>
+
+        <!-- Filter Zones & Stats Pill Buttons -->
+        <div class="grid grid-cols-4 gap-2 mb-4">
+            <button onclick="setFilter('all')" id="filter-btn-all" class="p-2 sm:p-2.5 rounded-xl border border-brand-500 bg-brand-500/10 text-brand-400 hover:bg-slate-800/80 transition flex flex-col items-center justify-center">
+                <span class="text-[10px] font-medium uppercase tracking-wider">Wszystkie</span>
+                <span id="count-all" class="text-sm sm:text-base font-bold text-slate-100 mt-0.5">0</span>
+            </button>
+            <button onclick="setFilter('red')" id="filter-btn-red" class="p-2 sm:p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800/80 transition flex flex-col items-center justify-center group">
+                <span class="text-[10px] text-rose-400 font-medium flex items-center gap-1 uppercase tracking-wider">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50"></span>Czerwone
+                </span>
+                <span id="count-red" class="text-sm sm:text-base font-bold text-rose-400 mt-0.5">0</span>
+            </button>
+            <button onclick="setFilter('yellow')" id="filter-btn-yellow" class="p-2 sm:p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800/80 transition flex flex-col items-center justify-center group">
+                <span class="text-[10px] text-amber-400 font-medium flex items-center gap-1 uppercase tracking-wider">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50"></span>Żółte
+                </span>
+                <span id="count-yellow" class="text-sm sm:text-base font-bold text-amber-400 mt-0.5">0</span>
+            </button>
+            <button onclick="setFilter('green')" id="filter-btn-green" class="p-2 sm:p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800/80 transition flex flex-col items-center justify-center group">
+                <span class="text-[10px] text-emerald-400 font-medium flex items-center gap-1 uppercase tracking-wider">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"></span>Zielone
+                </span>
+                <span id="count-green" class="text-sm sm:text-base font-bold text-emerald-400 mt-0.5">0</span>
+            </button>
+        </div>
+
+        <!-- Main Quiz Card -->
+        <div id="quiz-box" class="bg-gradient-to-b from-slate-900/90 to-slate-900/50 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-2xl backdrop-blur-sm relative overflow-hidden transition-all duration-300 min-h-[420px] flex flex-col justify-between">
+            
+            <!-- Top Card Header -->
+            <div class="flex items-center justify-between gap-2 pb-4 border-b border-slate-800/80">
+                <span id="active-zone-badge" class="px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-semibold tracking-wide border uppercase bg-slate-800 text-slate-400 border-slate-700">
+                    NOWE SŁÓWKO
+                </span>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="speakWord()" title="Odsłuchaj wymowę (en-GB)"
+                        class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white border border-slate-700 hover:border-brand-500 flex items-center justify-center transition shadow-sm group">
+                        <i class="fa-solid fa-volume-high text-xs group-hover:scale-110 transition-transform"></i>
+                    </button>
+                    <div class="px-2.5 py-1 rounded-lg bg-slate-950/70 border border-slate-800 flex items-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-fire text-amber-400 text-xs"></i>
+                        <span id="streak-count" class="font-bold text-slate-200">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Area -->
+            <div class="py-6 text-center">
+                <span id="prompt-subtitle" class="text-[11px] uppercase font-semibold text-slate-400 tracking-widest block mb-2">
+                    Przetłumacz na język polski:
+                </span>
+                <h2 id="prompt-word" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight px-2 break-words">
+                    ...
+                </h2>
+            </div>
+
+            <!-- 4 Options (A, B, C, D) -->
+            <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                <!-- Dynamic options -->
+            </div>
+
+            <!-- Status message -->
+            <div id="feedback-message" class="text-center text-xs min-h-[22px] mt-3 font-semibold transition-all"></div>
+
+            <!-- Wrong Answer Panel: waits for user to click "Kolejne pytanie" -->
+            <div id="wrong-answer-panel" class="hidden mt-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-950/90 via-slate-900 to-slate-900 border-2 border-rose-500 shadow-2xl animate-fadeIn">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <div class="text-[11px] font-bold uppercase text-rose-400 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-xmark text-sm"></i> Błędna odpowiedź!
+                        </div>
+                        <div class="text-xs text-slate-400">Prawidłowe tłumaczenie to:</div>
+                        <div class="text-lg sm:text-xl font-extrabold text-emerald-400 tracking-tight" id="correct-answer-display">
+                            ---
+                        </div>
+                        <div class="text-xs text-slate-300 font-medium pt-1 border-t border-slate-800/80 flex items-center gap-2" id="full-translation-display">
+                            ---
+                        </div>
+                    </div>
+
+                    <button id="btn-next-word" onclick="proceedToNextWord()" 
+                        class="self-stretch sm:self-auto px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white font-bold text-sm shadow-xl shadow-brand-600/40 hover:scale-[1.02] transition flex items-center justify-center gap-2 shrink-0 border border-brand-400/40">
+                        <span>Kolejne pytanie</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                        <kbd class="ml-1 px-1.5 py-0.5 text-[10px] bg-brand-700/90 rounded border border-brand-400/50 font-mono">Enter ↵</kbd>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12 px-6 bg-slate-900/50 border border-slate-800 rounded-2xl">
+            <div class="w-12 h-12 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3 text-lg">
+                <i class="fa-solid fa-inbox"></i>
+            </div>
+            <h3 class="text-base font-semibold text-white">Brak słówek w tej strefie</h3>
+            <p id="empty-state-desc" class="text-xs text-slate-400 max-w-sm mx-auto mt-1 leading-relaxed">
+                Wybierz inny filtr strefy lub przejdź do innego rozdziału.
+            </p>
+            <button onclick="setFilter('all')" class="mt-4 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold shadow-md transition">
+                Pokaż wszystkie słówka
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-between mt-4 px-1 text-xs text-slate-500">
+            <span>Sterowanie klawiaturą: <kbd class="px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded border border-slate-700 text-[10px]">1-4</kbd> lub <kbd class="px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded border border-slate-700 text-[10px]">A-D</kbd></span>
+            <button onclick="openResetModal()" class="hover:text-rose-400 transition flex items-center gap-1">
+                <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                <span>Resetuj postęp</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- VIEW 2: ROZDZIAŁY -->
+    <section id="view-chapters" class="hidden flex-1 max-w-4xl w-full mx-auto px-4 py-6 sm:py-8">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h2 class="text-lg sm:text-xl font-bold text-white">Rozdziały repetytorium</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Wybierz dział do nauki lub sprawdź swoje postępy w poszczególnych strefach</p>
+            </div>
+            <button onclick="switchTab('training')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white transition flex items-center gap-1.5">
+                <i class="fa-solid fa-play text-[10px]"></i>
+                <span>Powrót do treningu</span>
+            </button>
+        </div>
+
+        <div id="chapters-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dynamically populated cards -->
+        </div>
+    </section>
+
+    <!-- RESET MODAL -->
+    <div id="reset-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center">
+            <div class="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto mb-3 text-lg border border-rose-500/20">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-base font-semibold text-white">Zresetować postęp?</h3>
+            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                Ta akcja wyczyści wszystkie przypisania do stref (Czerwone, Żółte, Zielone) dla Twojego profilu.
+            </p>
+            <div class="grid grid-cols-2 gap-2 mt-5">
+                <button onclick="closeResetModal()" class="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition">
+                    Anuluj
+                </button>
+                <button onclick="confirmResetProgress()" class="px-3.5 py-2 rounded-xl text-xs font-medium text-white bg-rose-600 hover:bg-rose-500 transition">
+                    Tak, zresetuj
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT NUMBER MODAL -->
+    <div id="student-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl text-center">
+            <div class="w-12 h-12 rounded-xl bg-brand-600/10 text-brand-400 flex items-center justify-center mx-auto mb-3 text-xl border border-brand-500/20">
+                <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white tracking-tight">Witaj w JackSparrow Trainer!</h3>
+            <div class="my-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-left">
+                <p class="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-exclamation"></i> Instrukcja:
+                </p>
+                <p class="text-xs text-amber-200/90 mt-1 leading-relaxed">
+                    Przed skorzystaniem z aplikacji podaj swój <strong>numer z dziennika</strong>. Twoje poprawne, mylone i utrwalone słówka będą zapisywane wyłącznie na Twoim profilu.
+                </p>
+            </div>
+
+            <form onsubmit="handleStudentSubmit(event)" class="mt-4">
+                <div class="text-left mb-1.5 text-xs text-slate-400 font-medium">Twój numer z dziennika:</div>
+                <input type="number" min="1" max="99" id="input-student-nr" required placeholder="np. 7, 14, 21" 
+                    class="w-full text-center text-xl font-bold py-3 px-4 rounded-xl bg-slate-950 border border-slate-700 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white placeholder-slate-600 outline-none transition">
+
+                <!-- Recent numbers list -->
+                <div id="recent-students-container" class="mt-3 text-left hidden">
+                    <div class="text-[11px] text-slate-500 mb-1">Ostatnio używane numery:</div>
+                    <div id="recent-students-list" class="flex flex-wrap gap-1.5"></div>
+                </div>
+
+                <button type="submit" 
+                    class="mt-5 w-full py-3 px-4 bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-brand-600/30 transition">
+                    Rozpocznij naukę
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- QUICK REVIEW SUMMARY MODAL -->
+    <div id="summary-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-3 text-xl border border-amber-500/20">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white">Wynik Szybkiej Powtórki</h3>
+            <p class="text-xs text-slate-400 mt-1">Ukończono serię 30 pytań!</p>
+
+            <div class="my-5 p-4 rounded-xl bg-slate-950/70 border border-slate-800">
+                <div id="summary-score-percent" class="text-3xl font-extrabold text-brand-400 mb-2">0%</div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-300 font-medium">
+                        Trafienia: <strong id="summary-hits">0</strong>
+                    </div>
+                    <div class="p-2 rounded-lg bg-rose-950/40 border border-rose-500/20 text-rose-300 font-medium">
+                        Błędy: <strong id="summary-mistakes">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="restartQuickReview()" class="py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition">
+                    Powtórz 30 pytań
+                </button>
+                <button onclick="exitQuickReview()" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition">
+                    Zwykły trening
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const ACTIVE_STUDENT_KEY = 'jack_sparrow_active_student_nr';
+        const ALL_STUDENTS_LIST_KEY = 'jack_sparrow_students_registry';
+        const SETTINGS_KEY = 'jack_sparrow_oxford_settings_v3';
+        const SESSION_STATE_PREFIX = 'jacksparrow_session_student_';
+
+        const CHAPTERS_META = [
+            { id: 'all', title: 'Wszystkie rozdziały', desc: 'Pełna baza słówek ze wszystkich działów', icon: 'fa-book-open' },
+            { id: 'czlowiek', title: '01. Człowiek', desc: 'Dane osobowe, wygląd, charakter, uczucia, etapy życia', icon: 'fa-user' },
+            { id: 'mieszkanie', title: '02. Miejsce zamieszkania', desc: 'Pokoje, wyposażenie, rodzaje domów, prace domowe', icon: 'fa-house' },
+            { id: 'edukacja', title: '03. Edukacja', desc: 'Przedmioty szkolne, nauka, życie szkolne, egzaminy', icon: 'fa-graduation-cap' },
+            { id: 'praca', title: '04. Praca', desc: 'Zawody, obowiązki, warunki pracy, rynek pracy', icon: 'fa-briefcase' }
+        ];
+
+        /**
+         * KOMPLETNA BAZA ZE WSZYSTKICH 4 PLIKÓW TEKSTOWYCH
+         */
+        const RAW_OXFORD_DATA = [
+            // 01. CZŁOWIEK
+            { cat: "czlowiek", en: "age", pl: "wiek" },
+            { cat: "czlowiek", en: "email address", pl: "adres emailowy" },
+            { cat: "czlowiek", en: "female", pl: "kobieta" },
+            { cat: "czlowiek", en: "first name", pl: "imię" },
+            { cat: "czlowiek", en: "level of English", pl: "poziom znajomości języka angielskiego" },
+            { cat: "czlowiek", en: "male", pl: "mężczyzna" },
+            { cat: "czlowiek", en: "last name", pl: "nazwisko" },
+            { cat: "czlowiek", en: "surname", pl: "nazwisko" },
+            { cat: "czlowiek", en: "nationality", pl: "narodowość" },
+            { cat: "czlowiek", en: "occupation", pl: "zawód" },
+            { cat: "czlowiek", en: "place of birth", pl: "miejsce urodzenia" },
+            { cat: "czlowiek", en: "sex", pl: "płeć" },
+            { cat: "czlowiek", en: "telephone no", pl: "numer telefonu" },
+            { cat: "czlowiek", en: "home number", pl: "numer telefonu domowego" },
+            { cat: "czlowiek", en: "mobile number", pl: "numer telefonu komórkowego" },
+            { cat: "czlowiek", en: "appearance", pl: "wygląd" },
+            { cat: "czlowiek", en: "attractive", pl: "atrakcyjny" },
+            { cat: "czlowiek", en: "beard", pl: "broda zarost" },
+            { cat: "czlowiek", en: "beautiful", pl: "piękny" },
+            { cat: "czlowiek", en: "distinguishing features", pl: "cechy szczególne" },
+            { cat: "czlowiek", en: "freckles", pl: "piegi" },
+            { cat: "czlowiek", en: "good looking", pl: "atrakcyjny przystojny" },
+            { cat: "czlowiek", en: "handsome", pl: "przystojny" },
+            { cat: "czlowiek", en: "looks", pl: "wygląd uroda" },
+            { cat: "czlowiek", en: "moustache", pl: "wąsy" },
+            { cat: "czlowiek", en: "physical appearance", pl: "wygląd zewnętrzny" },
+            { cat: "czlowiek", en: "pretty", pl: "ładny" },
+            { cat: "czlowiek", en: "scar", pl: "blizna" },
+            { cat: "czlowiek", en: "tattoo", pl: "tatuaż" },
+            { cat: "czlowiek", en: "ugly", pl: "brzydki" },
+            { cat: "czlowiek", en: "unattractive", pl: "nieatrakcyjny" },
+            { cat: "czlowiek", en: "wrinkles", pl: "zmarszczki" },
+            { cat: "czlowiek", en: "height", pl: "wzrost" },
+            { cat: "czlowiek", en: "medium height", pl: "średniego wzrostu" },
+            { cat: "czlowiek", en: "short", pl: "niski" },
+            { cat: "czlowiek", en: "tall", pl: "wysoki" },
+            { cat: "czlowiek", en: "bald", pl: "łysy" },
+            { cat: "czlowiek", en: "blonde hair", pl: "blond włosy" },
+            { cat: "czlowiek", en: "brown hair", pl: "brązowe włosy" },
+            { cat: "czlowiek", en: "curly hair", pl: "kręcone włosy" },
+            { cat: "czlowiek", en: "dark hair", pl: "ciemne włosy" },
+            { cat: "czlowiek", en: "fair hair", pl: "jasne włosy" },
+            { cat: "czlowiek", en: "long hair", pl: "długie włosy" },
+            { cat: "czlowiek", en: "short hair", pl: "krótkie włosy" },
+            { cat: "czlowiek", en: "straight hair", pl: "proste włosy" },
+            { cat: "czlowiek", en: "wavy hair", pl: "pofalowane włosy" },
+            { cat: "czlowiek", en: "blue eyes", pl: "niebieskie oczy" },
+            { cat: "czlowiek", en: "brown eyes", pl: "brązowe oczy" },
+            { cat: "czlowiek", en: "expressive eyes", pl: "wyraziste pełne wyrazu oczy" },
+            { cat: "czlowiek", en: "green eyes", pl: "zielone oczy" },
+            { cat: "czlowiek", en: "elderly", pl: "starszy starsza" },
+            { cat: "czlowiek", en: "in his her early twenties", pl: "trochę ponad 20 lat" },
+            { cat: "czlowiek", en: "in his late forties", pl: "przed 50tką" },
+            { cat: "czlowiek", en: "in her mid thirties", pl: "około 35 lat" },
+            { cat: "czlowiek", en: "in his teens", pl: "nastoletni" },
+            { cat: "czlowiek", en: "middle aged", pl: "w średnim wieku" },
+            { cat: "czlowiek", en: "young", pl: "młody młoda" },
+            { cat: "czlowiek", en: "adventurous", pl: "żądny przygód śmiały" },
+            { cat: "czlowiek", en: "aggressive", pl: "agresywny" },
+            { cat: "czlowiek", en: "ambitious", pl: "ambitny" },
+            { cat: "czlowiek", en: "bossy", pl: "dominujący" },
+            { cat: "czlowiek", en: "brave", pl: "odważny" },
+            { cat: "czlowiek", en: "bright", pl: "bystry inteligentny" },
+            { cat: "czlowiek", en: "intelligent", pl: "inteligentny" },
+            { cat: "czlowiek", en: "cheerful", pl: "pogodny" },
+            { cat: "czlowiek", en: "clever", pl: "sprytny" },
+            { cat: "czlowiek", en: "confident", pl: "pewny siebie" },
+            { cat: "czlowiek", en: "creative", pl: "twórczy" },
+            { cat: "czlowiek", en: "dishonest", pl: "nieuczciwy" },
+            { cat: "czlowiek", en: "disloyal", pl: "nielojalny" },
+            { cat: "czlowiek", en: "enthusiastic", pl: "entuzjastyczny" },
+            { cat: "czlowiek", en: "friendly", pl: "przyjazny życzliwy" },
+            { cat: "czlowiek", en: "generous", pl: "hojny szczodry" },
+            { cat: "czlowiek", en: "gentle", pl: "łagodny" },
+            { cat: "czlowiek", en: "hard working", pl: "pracowity" },
+            { cat: "czlowiek", en: "have a sense of humour", pl: "mieć poczucie humoru" },
+            { cat: "czlowiek", en: "honest", pl: "szczery" },
+            { cat: "czlowiek", en: "immature", pl: "niedojrzały" },
+            { cat: "czlowiek", en: "impatient", pl: "niecierpliwy" },
+            { cat: "czlowiek", en: "impolite", pl: "nieuprzejmy" },
+            { cat: "czlowiek", en: "insecure", pl: "niepewny siebie" },
+            { cat: "czlowiek", en: "intolerant", pl: "nietolerancyjny" },
+            { cat: "czlowiek", en: "irresponsible", pl: "nieodpowiedzialny" },
+            { cat: "czlowiek", en: "kind", pl: "miły" },
+            { cat: "czlowiek", en: "lazy", pl: "leniwy" },
+            { cat: "czlowiek", en: "lively", pl: "żywy żywiołowy" },
+            { cat: "czlowiek", en: "loyal", pl: "lojalny" },
+            { cat: "czlowiek", en: "mature", pl: "dojrzały" },
+            { cat: "czlowiek", en: "mean", pl: "skąpy" },
+            { cat: "czlowiek", en: "modest", pl: "skromny" },
+            { cat: "czlowiek", en: "patient", pl: "cierpliwy" },
+            { cat: "czlowiek", en: "personality", pl: "osobowość" },
+            { cat: "czlowiek", en: "polite", pl: "uprzejmy" },
+            { cat: "czlowiek", en: "quiet", pl: "cichy" },
+            { cat: "czlowiek", en: "reliable", pl: "niezawodny solidny" },
+            { cat: "czlowiek", en: "responsible", pl: "odpowiedzialny" },
+            { cat: "czlowiek", en: "rude", pl: "niegrzeczny" },
+            { cat: "czlowiek", en: "secure", pl: "bezpieczny" },
+            { cat: "czlowiek", en: "selfish", pl: "samolubny" },
+            { cat: "czlowiek", en: "sensible", pl: "rozsądny" },
+            { cat: "czlowiek", en: "shy", pl: "nieśmiały" },
+            { cat: "czlowiek", en: "silly", pl: "niemądry głupi" },
+            { cat: "czlowiek", en: "sociable", pl: "towarzyski" },
+            { cat: "czlowiek", en: "stubborn", pl: "uparty" },
+            { cat: "czlowiek", en: "stupid", pl: "głupi" },
+            { cat: "czlowiek", en: "talkative", pl: "gadatliwy" },
+            { cat: "czlowiek", en: "tolerant", pl: "tolerancyjny" },
+            { cat: "czlowiek", en: "unambitious", pl: "bez ambicji" },
+            { cat: "czlowiek", en: "unfriendly", pl: "nieprzyjazny" },
+            { cat: "czlowiek", en: "unkind", pl: "niemiły" },
+            { cat: "czlowiek", en: "unreliable", pl: "niesolidny niepewny" },
+            { cat: "czlowiek", en: "unselfish", pl: "pozbawiony egoizmu" },
+            { cat: "czlowiek", en: "admire", pl: "podziwiać" },
+            { cat: "czlowiek", en: "angry", pl: "zły rozzłoszczony" },
+            { cat: "czlowiek", en: "annoyed", pl: "zirytowany" },
+            { cat: "czlowiek", en: "ashamed", pl: "zawstydzony" },
+            { cat: "czlowiek", en: "astonished", pl: "zdziwiony zaskoczony" },
+            { cat: "czlowiek", en: "avoid", pl: "unikać" },
+            { cat: "czlowiek", en: "be in a bad mood", pl: "być w złym humorze" },
+            { cat: "czlowiek", en: "be in a good mood", pl: "być w dobrym humorze" },
+            { cat: "czlowiek", en: "calm", pl: "spokojny" },
+            { cat: "czlowiek", en: "cant stand sth", pl: "nie znosić czegoś" },
+            { cat: "czlowiek", en: "care about sb", pl: "troszczyć się o kogoś" },
+            { cat: "czlowiek", en: "despise", pl: "pogardzać" },
+            { cat: "czlowiek", en: "dislike", pl: "nie lubić" },
+            { cat: "czlowiek", en: "dont mind sth", pl: "nie mieć nic przeciwko czemuś" },
+            { cat: "czlowiek", en: "embarrassed", pl: "zażenowany" },
+            { cat: "czlowiek", en: "emotion", pl: "uczucie emocja" },
+            { cat: "czlowiek", en: "envious", pl: "zazdrosny zawistny" },
+            { cat: "czlowiek", en: "feel", pl: "czuć czuć się" },
+            { cat: "czlowiek", en: "feel all right about sth", pl: "nie mieć z czymś problemu" },
+            { cat: "czlowiek", en: "feel sorry for sb", pl: "współczuć komuś" },
+            { cat: "czlowiek", en: "feeling", pl: "uczucie emocja" },
+            { cat: "czlowiek", en: "get nervous", pl: "denerwować się" },
+            { cat: "czlowiek", en: "happy", pl: "szczęśliwy" },
+            { cat: "czlowiek", en: "hate", pl: "nienawidzić" },
+            { cat: "czlowiek", en: "havent got a problem with sth", pl: "nie mieć z czymś problemu" },
+            { cat: "czlowiek", en: "jealous", pl: "zazdrosny" },
+            { cat: "czlowiek", en: "keep away from sth", pl: "trzymać się z dala od czegoś" },
+            { cat: "czlowiek", en: "pleased", pl: "zadowolony" },
+            { cat: "czlowiek", en: "relaxed", pl: "zrelaksowany" },
+            { cat: "czlowiek", en: "scared", pl: "przestraszony" },
+            { cat: "czlowiek", en: "shocked", pl: "zszokowany" },
+            { cat: "czlowiek", en: "stay away from sth", pl: "trzymać się z dala od czegoś" },
+            { cat: "czlowiek", en: "surprised", pl: "zdziwiony" },
+            { cat: "czlowiek", en: "terrified", pl: "przerażony" },
+            { cat: "czlowiek", en: "unhappy", pl: "nieszczęśliwy" },
+            { cat: "czlowiek", en: "upset", pl: "zaniepokojony" },
+            { cat: "czlowiek", en: "worried", pl: "zmartwiony" },
+            { cat: "czlowiek", en: "be fond of sth", pl: "bardzo coś lubić" },
+            { cat: "czlowiek", en: "be good at sth", pl: "być w czymś dobrym" },
+            { cat: "czlowiek", en: "be interested in sth", pl: "interesować się czymś" },
+            { cat: "czlowiek", en: "be into sth", pl: "być czymś zainteresowanym" },
+            { cat: "czlowiek", en: "be keen on sth", pl: "przepadać za czymś" },
+            { cat: "czlowiek", en: "be mad about sth", pl: "mieć bzika na jakimś punkcie" },
+            { cat: "czlowiek", en: "cant live without sth", pl: "nie móc bez czegoś żyć" },
+            { cat: "czlowiek", en: "enjoy sth", pl: "lubić coś czerpać z czegoś przyjemność" },
+            { cat: "czlowiek", en: "find sth relaxing", pl: "uważać coś za relaksujące" },
+            { cat: "czlowiek", en: "leisure", pl: "czas wolny rekreacja" },
+            { cat: "czlowiek", en: "leisure activities", pl: "rozrywki hobby" },
+            { cat: "czlowiek", en: "particularly like", pl: "szczególnie coś lubić" },
+            { cat: "czlowiek", en: "spare time", pl: "czas wolny" },
+            { cat: "czlowiek", en: "adolescence", pl: "okres dojrzewania" },
+            { cat: "czlowiek", en: "adolescent", pl: "nastolatek nastolatka" },
+            { cat: "czlowiek", en: "adult", pl: "dorosły" },
+            { cat: "czlowiek", en: "adulthood", pl: "dorosłość" },
+            { cat: "czlowiek", en: "birth", pl: "narodziny" },
+            { cat: "czlowiek", en: "child", pl: "dziecko" },
+            { cat: "czlowiek", en: "childhood", pl: "dzieciństwo" },
+            { cat: "czlowiek", en: "death", pl: "śmierć" },
+            { cat: "czlowiek", en: "kid", pl: "dzieciak" },
+            { cat: "czlowiek", en: "middle age", pl: "wiek średni" },
+            { cat: "czlowiek", en: "old age", pl: "starość" },
+            { cat: "czlowiek", en: "bag", pl: "torba" },
+            { cat: "czlowiek", en: "books", pl: "książki" },
+            { cat: "czlowiek", en: "clothes", pl: "ubrania" },
+            { cat: "czlowiek", en: "computer", pl: "komputer" },
+            { cat: "czlowiek", en: "glasses", pl: "okulary" },
+            { cat: "czlowiek", en: "headphones", pl: "słuchawki" },
+            { cat: "czlowiek", en: "ID", pl: "dokument tożsamości" },
+            { cat: "czlowiek", en: "jewellery", pl: "biżuteria" },
+            { cat: "czlowiek", en: "mobile phone", pl: "telefon komórkowy" },
+            { cat: "czlowiek", en: "money", pl: "pieniądze" },
+            { cat: "czlowiek", en: "notepad", pl: "notatnik" },
+            { cat: "czlowiek", en: "passport", pl: "paszport" },
+            { cat: "czlowiek", en: "pen", pl: "długopis" },
+            { cat: "czlowiek", en: "wallet", pl: "portfel" },
+            { cat: "czlowiek", en: "watch", pl: "zegarek" },
+            { cat: "czlowiek", en: "code", pl: "programować" },
+            { cat: "czlowiek", en: "cook", pl: "gotować" },
+            { cat: "czlowiek", en: "dance", pl: "tańczyć" },
+            { cat: "czlowiek", en: "do housework", pl: "wykonywać prace domowe" },
+            { cat: "czlowiek", en: "drive a car", pl: "prowadzić samochód" },
+            { cat: "czlowiek", en: "fish", pl: "łowić ryby" },
+            { cat: "czlowiek", en: "paint", pl: "malować" },
+            { cat: "czlowiek", en: "play a musical instrument", pl: "grać na instrumencie muzycznym" },
+            { cat: "czlowiek", en: "sew", pl: "szyć" },
+            { cat: "czlowiek", en: "solve problems", pl: "rozwiązywać problemy" },
+            { cat: "czlowiek", en: "swim", pl: "pływać" },
+            { cat: "czlowiek", en: "empathy", pl: "empatia" },
+            { cat: "czlowiek", en: "enthusiasm", pl: "entuzjazm" },
+            { cat: "czlowiek", en: "honesty", pl: "szczerość" },
+            { cat: "czlowiek", en: "independence", pl: "niezależność" },
+            { cat: "czlowiek", en: "love", pl: "miłość" },
+            { cat: "czlowiek", en: "loyalty", pl: "lojalność" },
+            { cat: "czlowiek", en: "openness", pl: "otwartość" },
+            { cat: "czlowiek", en: "personal development", pl: "rozwój osobisty" },
+            { cat: "czlowiek", en: "personal freedom", pl: "wolność osobista" },
+            { cat: "czlowiek", en: "personal fulfilment", pl: "satysfakcja osobista" },
+            { cat: "czlowiek", en: "respect", pl: "szacunek" },
+            { cat: "czlowiek", en: "responsibility", pl: "odpowiedzialność" },
+            { cat: "czlowiek", en: "sensitivity", pl: "wrażliwość" },
+            { cat: "czlowiek", en: "trust", pl: "zaufanie" },
+            { cat: "czlowiek", en: "acknowledge", pl: "przyznawać potwierdzać" },
+            { cat: "czlowiek", en: "acknowledgement", pl: "przyznanie" },
+            { cat: "czlowiek", en: "admiration", pl: "podziw" },
+            { cat: "czlowiek", en: "authority on sth", pl: "autorytet w jakiejś dziedzinie" },
+            { cat: "czlowiek", en: "enjoy respect", pl: "cieszyć się szacunkiem" },
+            { cat: "czlowiek", en: "figure", pl: "postać" },
+            { cat: "czlowiek", en: "influence sb", pl: "mieć na kogoś wpływ" },
+            { cat: "czlowiek", en: "influencer", pl: "influencer osoba mająca wpływ na daną grupę społeczną" },
+            { cat: "czlowiek", en: "inspire sb", pl: "inspirować kogoś" },
+            { cat: "czlowiek", en: "look up to sb", pl: "podziwiać kogoś" },
+            { cat: "czlowiek", en: "prestige", pl: "prestiż" },
+            { cat: "czlowiek", en: "recognition", pl: "uznanie" },
+            { cat: "czlowiek", en: "collective responsibility", pl: "odpowiedzialność zbiorowa" },
+            { cat: "czlowiek", en: "dignity", pl: "godność" },
+            { cat: "czlowiek", en: "equality", pl: "równość" },
+            { cat: "czlowiek", en: "fairness", pl: "sprawiedliwość" },
+            { cat: "czlowiek", en: "freedom of speech", pl: "wolność wypowiedzi" },
+            { cat: "czlowiek", en: "justice", pl: "sprawiedliwość" },
+            { cat: "czlowiek", en: "quality of life", pl: "jakość życia" },
+            { cat: "czlowiek", en: "right to health and welfare", pl: "prawo do zdrowia i dobrostanu" },
+            { cat: "czlowiek", en: "tolerance", pl: "tolerancja" },
+            { cat: "czlowiek", en: "actually", pl: "właściwie faktycznie" },
+            { cat: "czlowiek", en: "eventually", pl: "w końcu" },
+            { cat: "czlowiek", en: "hazard", pl: "niebezpieczeństwo" },
+            { cat: "czlowiek", en: "nervous", pl: "zdenerwowany" },
+            { cat: "czlowiek", en: "ordinary", pl: "zwykły" },
+            { cat: "czlowiek", en: "sympathetic", pl: "współczujący" },
+            { cat: "czlowiek", en: "carry on", pl: "kontynuować" },
+            { cat: "czlowiek", en: "fall out", pl: "pokłócić się" },
+            { cat: "czlowiek", en: "stand up", pl: "wstać podnieść się" },
+            { cat: "czlowiek", en: "take off", pl: "stać się popularnym" },
+            { cat: "czlowiek", en: "turn out", pl: "okazać się" },
+            { cat: "czlowiek", en: "watch out", pl: "uważać" },
+
+            // 02. MIEJSCE ZAMIESZKANIA
+            { cat: "mieszkanie", en: "basin", pl: "umywalka" },
+            { cat: "mieszkanie", en: "bath", pl: "wanna" },
+            { cat: "mieszkanie", en: "bathroom", pl: "łazienka" },
+            { cat: "mieszkanie", en: "mirror", pl: "lustro" },
+            { cat: "mieszkanie", en: "shower", pl: "prysznic" },
+            { cat: "mieszkanie", en: "toilet", pl: "toaleta" },
+            { cat: "mieszkanie", en: "towel", pl: "ręcznik" },
+            { cat: "mieszkanie", en: "washing machine", pl: "pralka" },
+            { cat: "mieszkanie", en: "bed", pl: "łóżko" },
+            { cat: "mieszkanie", en: "bedroom", pl: "sypialnia" },
+            { cat: "mieszkanie", en: "blanket", pl: "koc" },
+            { cat: "mieszkanie", en: "rug", pl: "dywanik" },
+            { cat: "mieszkanie", en: "wardrobe", pl: "szafa" },
+            { cat: "mieszkanie", en: "chair", pl: "krzesło" },
+            { cat: "mieszkanie", en: "cooker", pl: "kuchenka" },
+            { cat: "mieszkanie", en: "kitchen cupboard", pl: "szafka kuchenna" },
+            { cat: "mieszkanie", en: "dishwasher", pl: "zmywarka" },
+            { cat: "mieszkanie", en: "refrigerator", pl: "lodówka" },
+            { cat: "mieszkanie", en: "fridge", pl: "lodówka" },
+            { cat: "mieszkanie", en: "kettle", pl: "czajnik" },
+            { cat: "mieszkanie", en: "kitchen", pl: "kuchnia" },
+            { cat: "mieszkanie", en: "microwave", pl: "kuchenka mikrofalowa" },
+            { cat: "mieszkanie", en: "oven", pl: "piekarnik" },
+            { cat: "mieszkanie", en: "rubbish bin", pl: "kosz na śmieci" },
+            { cat: "mieszkanie", en: "sink", pl: "zlew" },
+            { cat: "mieszkanie", en: "armchair", pl: "fotel" },
+            { cat: "mieszkanie", en: "coffee table", pl: "stolik do kawy ława" },
+            { cat: "mieszkanie", en: "DVD player", pl: "odtwarzacz DVD" },
+            { cat: "mieszkanie", en: "fireplace", pl: "kominek" },
+            { cat: "mieszkanie", en: "furniture", pl: "meble" },
+            { cat: "mieszkanie", en: "living room", pl: "salon" },
+            { cat: "mieszkanie", en: "sofa", pl: "sofa" },
+            { cat: "mieszkanie", en: "TV", pl: "telewizor" },
+            { cat: "mieszkanie", en: "telly", pl: "telewizor" },
+            { cat: "mieszkanie", en: "bookshelf", pl: "półka na książki" },
+            { cat: "mieszkanie", en: "desk", pl: "biurko" },
+            { cat: "mieszkanie", en: "lamp", pl: "lampa" },
+            { cat: "mieszkanie", en: "study", pl: "gabinet" },
+            { cat: "mieszkanie", en: "doormat", pl: "wycieraczka" },
+            { cat: "mieszkanie", en: "hall", pl: "przedpokój korytarz" },
+            { cat: "mieszkanie", en: "hallway", pl: "przedpokój korytarz" },
+            { cat: "mieszkanie", en: "carpet", pl: "dywan" },
+            { cat: "mieszkanie", en: "curtain", pl: "zasłona" },
+            { cat: "mieszkanie", en: "doorbell", pl: "dzwonek" },
+            { cat: "mieszkanie", en: "light switch", pl: "włącznik światła" },
+            { cat: "mieszkanie", en: "painting", pl: "obraz" },
+            { cat: "mieszkanie", en: "picture", pl: "obraz zdjęcie" },
+            { cat: "mieszkanie", en: "radiator", pl: "grzejnik kaloryfer" },
+            { cat: "mieszkanie", en: "above", pl: "nad ponad" },
+            { cat: "mieszkanie", en: "behind", pl: "za" },
+            { cat: "mieszkanie", en: "between", pl: "między" },
+            { cat: "mieszkanie", en: "downstairs", pl: "na dole w budynku" },
+            { cat: "mieszkanie", en: "in", pl: "w" },
+            { cat: "mieszkanie", en: "in front of", pl: "przed" },
+            { cat: "mieszkanie", en: "next to", pl: "obok" },
+            { cat: "mieszkanie", en: "on", pl: "na" },
+            { cat: "mieszkanie", en: "opposite", pl: "naprzeciw" },
+            { cat: "mieszkanie", en: "under", pl: "pod" },
+            { cat: "mieszkanie", en: "upstairs", pl: "na górze w budynku" },
+            { cat: "mieszkanie", en: "apartment", pl: "mieszkanie" },
+            { cat: "mieszkanie", en: "block of flats", pl: "blok mieszkalny" },
+            { cat: "mieszkanie", en: "bungalow", pl: "dom parterowy" },
+            { cat: "mieszkanie", en: "cottage", pl: "domek wiejski" },
+            { cat: "mieszkanie", en: "detached house", pl: "dom wolnostojący" },
+            { cat: "mieszkanie", en: "flat", pl: "mieszkanie" },
+            { cat: "mieszkanie", en: "mansion", pl: "dwór" },
+            { cat: "mieszkanie", en: "palace", pl: "pałac" },
+            { cat: "mieszkanie", en: "residence", pl: "rezydencja" },
+            { cat: "mieszkanie", en: "semi detached house", pl: "dom bliźniak" },
+            { cat: "mieszkanie", en: "skyscraper", pl: "drapacz chmur" },
+            { cat: "mieszkanie", en: "studio apartment", pl: "kawalerka" },
+            { cat: "mieszkanie", en: "terraced house", pl: "dom w zabudowie szeregowej segment" },
+            { cat: "mieszkanie", en: "top floor flat", pl: "mieszkanie na ostatnim piętrze" },
+            { cat: "mieszkanie", en: "tower block", pl: "wieżowiec" },
+            { cat: "mieszkanie", en: "villa", pl: "willa" },
+            { cat: "mieszkanie", en: "attic", pl: "poddasze strych" },
+            { cat: "mieszkanie", en: "balcony", pl: "balkon" },
+            { cat: "mieszkanie", en: "basement", pl: "piwnica" },
+            { cat: "mieszkanie", en: "ceiling", pl: "sufit" },
+            { cat: "mieszkanie", en: "cellar", pl: "piwnica" },
+            { cat: "mieszkanie", en: "chimney", pl: "komin" },
+            { cat: "mieszkanie", en: "drive", pl: "podjazd" },
+            { cat: "mieszkanie", en: "floor", pl: "podłoga piętro" },
+            { cat: "mieszkanie", en: "garage", pl: "garaż" },
+            { cat: "mieszkanie", en: "garden", pl: "ogród" },
+            { cat: "mieszkanie", en: "lift", pl: "winda" },
+            { cat: "mieszkanie", en: "on the first floor", pl: "na pierwszym piętrze" },
+            { cat: "mieszkanie", en: "on the ground floor", pl: "na parterze" },
+            { cat: "mieszkanie", en: "roof", pl: "dach" },
+            { cat: "mieszkanie", en: "room", pl: "pokój" },
+            { cat: "mieszkanie", en: "shutters", pl: "okiennice" },
+            { cat: "mieszkanie", en: "staircase", pl: "klatka schodowa" },
+            { cat: "mieszkanie", en: "stairs", pl: "schody" },
+            { cat: "mieszkanie", en: "storey", pl: "kondygnacja piętro" },
+            { cat: "mieszkanie", en: "ten storey building", pl: "dziesięciopiętrowy budynek" },
+            { cat: "mieszkanie", en: "terrace", pl: "taras" },
+            { cat: "mieszkanie", en: "bright", pl: "jasny" },
+            { cat: "mieszkanie", en: "cluttered", pl: "zagracony" },
+            { cat: "mieszkanie", en: "comfortable", pl: "wygodny" },
+            { cat: "mieszkanie", en: "cosy", pl: "przytulny" },
+            { cat: "mieszkanie", en: "enormous", pl: "olbrzymi ogromny" },
+            { cat: "mieszkanie", en: "fully furnished", pl: "w pełni wyposażony" },
+            { cat: "mieszkanie", en: "impressive", pl: "imponujący" },
+            { cat: "mieszkanie", en: "modern", pl: "nowoczesny" },
+            { cat: "mieszkanie", en: "renovated", pl: "wyremontowany odnowiony" },
+            { cat: "mieszkanie", en: "spacious", pl: "przestronny" },
+            { cat: "mieszkanie", en: "uncomfortable", pl: "niewygodny" },
+            { cat: "mieszkanie", en: "unfurnished", pl: "nieumeblowany" },
+            { cat: "mieszkanie", en: "countryside", pl: "wieś" },
+            { cat: "mieszkanie", en: "home town", pl: "miasto rodzinne" },
+            { cat: "mieszkanie", en: "housing estate", pl: "osiedle mieszkaniowe" },
+            { cat: "mieszkanie", en: "in the country", pl: "na wsi" },
+            { cat: "mieszkanie", en: "live", pl: "mieszkać" },
+            { cat: "mieszkanie", en: "live in a city", pl: "mieszkać w dużym mieście" },
+            { cat: "mieszkanie", en: "live in a town", pl: "mieszkać w małym mieście" },
+            { cat: "mieszkanie", en: "live in the city centre", pl: "mieszkać w centrum dużego miasta" },
+            { cat: "mieszkanie", en: "neighbour", pl: "sąsiad sąsiadka" },
+            { cat: "mieszkanie", en: "neighbourhood", pl: "okolica sąsiedztwo" },
+            { cat: "mieszkanie", en: "old town", pl: "starówka" },
+            { cat: "mieszkanie", en: "quiet location", pl: "cicha okolica" },
+            { cat: "mieszkanie", en: "resident", pl: "mieszkaniec mieszkanka" },
+            { cat: "mieszkanie", en: "residential area", pl: "dzielnica mieszkaniowa" },
+            { cat: "mieszkanie", en: "suburbs", pl: "przedmieścia" },
+            { cat: "mieszkanie", en: "tiny", pl: "maleńki niewielki" },
+            { cat: "mieszkanie", en: "village", pl: "wioska" },
+            { cat: "mieszkanie", en: "clean the floors", pl: "czyścić podłogi" },
+            { cat: "mieszkanie", en: "clean the windows", pl: "myć okna" },
+            { cat: "mieszkanie", en: "decorate a flat", pl: "urządzić mieszkanie" },
+            { cat: "mieszkanie", en: "do repairs", pl: "naprawić reperować" },
+            { cat: "mieszkanie", en: "do the cleaning", pl: "sprzątać" },
+            { cat: "mieszkanie", en: "do the dusting", pl: "ścierać kurze" },
+            { cat: "mieszkanie", en: "do the housework", pl: "wykonywać prace domowe" },
+            { cat: "mieszkanie", en: "do the ironing", pl: "prasować" },
+            { cat: "mieszkanie", en: "do the shopping", pl: "robić zakupy" },
+            { cat: "mieszkanie", en: "do the washing up", pl: "zmywać naczynia" },
+            { cat: "mieszkanie", en: "do the washing laundry", pl: "robić pranie" },
+            { cat: "mieszkanie", en: "furnish a flat", pl: "umeblować mieszkanie" },
+            { cat: "mieszkanie", en: "hoover the floors", pl: "odkurzać podłogi" },
+            { cat: "mieszkanie", en: "interior decorator", pl: "dekorator wnętrz" },
+            { cat: "mieszkanie", en: "lay the table", pl: "nakrywać do stołu" },
+            { cat: "mieszkanie", en: "make the bed", pl: "ścielić łóżko" },
+            { cat: "mieszkanie", en: "paint the walls", pl: "malować ściany" },
+            { cat: "mieszkanie", en: "renovate", pl: "odnawiać remontować" },
+            { cat: "mieszkanie", en: "take out the rubbish", pl: "wyrzucać śmieci" },
+            { cat: "mieszkanie", en: "throw away the rubbish", pl: "wyrzucać śmieci" },
+            { cat: "mieszkanie", en: "tidy up", pl: "sprzątać" },
+            { cat: "mieszkanie", en: "tidy your room", pl: "sprzątać swój pokój" },
+            { cat: "mieszkanie", en: "vacuum the carpets", pl: "odkurzać dywany" },
+            { cat: "mieszkanie", en: "accommodation", pl: "zakwaterowanie" },
+            { cat: "mieszkanie", en: "advert", pl: "ogłoszenie" },
+            { cat: "mieszkanie", en: "be at home be in", pl: "być w domu" },
+            { cat: "mieszkanie", en: "be in bad good condition", pl: "być w dobrym złym stanie" },
+            { cat: "mieszkanie", en: "be out", pl: "być poza domem" },
+            { cat: "mieszkanie", en: "bill", pl: "rachunek" },
+            { cat: "mieszkanie", en: "buy a flat house", pl: "kupić mieszkanie dom" },
+            { cat: "mieszkanie", en: "central heating", pl: "centralne ogrzewanie" },
+            { cat: "mieszkanie", en: "estate agency", pl: "biuro nieruchomości" },
+            { cat: "mieszkanie", en: "estate agent", pl: "agent agentka nieruchomości" },
+            { cat: "mieszkanie", en: "flatmate", pl: "współlokator współlokatorka" },
+            { cat: "mieszkanie", en: "for rent", pl: "na wynajem" },
+            { cat: "mieszkanie", en: "for sale", pl: "na sprzedaż" },
+            { cat: "mieszkanie", en: "gas bill", pl: "rachunek za gaz" },
+            { cat: "mieszkanie", en: "go straight home", pl: "iść prosto do domu" },
+            { cat: "mieszkanie", en: "hall of residence", pl: "akademik" },
+            { cat: "mieszkanie", en: "house share", pl: "dzielenie domu ze współlokatorami" },
+            { cat: "mieszkanie", en: "landlady", pl: "właścicielka mieszkania" },
+            { cat: "mieszkanie", en: "landlord", pl: "właściciel mieszkania" },
+            { cat: "mieszkanie", en: "lease", pl: "umowa najmu" },
+            { cat: "mieszkanie", en: "let a flat house room", pl: "wynajmować komuś mieszkanie dom pokój" },
+            { cat: "mieszkanie", en: "live on your own", pl: "mieszkać samodzielnie" },
+            { cat: "mieszkanie", en: "lock the door", pl: "zamykać drzwi na klucz" },
+            { cat: "mieszkanie", en: "mortgage", pl: "hipoteka kredyt hipoteczny" },
+            { cat: "mieszkanie", en: "pay the bills", pl: "płacić rachunki" },
+            { cat: "mieszkanie", en: "pay the mortgage", pl: "spłacać kredyt hipoteczny" },
+            { cat: "mieszkanie", en: "purchase a flat house", pl: "kupić mieszkanie dom" },
+            { cat: "mieszkanie", en: "rent", pl: "czynsz" },
+            { cat: "mieszkanie", en: "rent a flat house room", pl: "wynajmować mieszkanie dom pokój od kogoś" },
+            { cat: "mieszkanie", en: "share a flat a room with sb", pl: "wspólnie mieszkać z kimś w mieszkaniu pokoju" },
+            { cat: "mieszkanie", en: "take out a mortgage", pl: "wziąć kredyt hipoteczny" },
+            { cat: "mieszkanie", en: "tenant", pl: "najemca najemczyni lokator lokatorka" },
+            { cat: "mieszkanie", en: "tight budget", pl: "ograniczony budżet" },
+            { cat: "mieszkanie", en: "boxes", pl: "pudełka" },
+            { cat: "mieszkanie", en: "bubble wrap", pl: "folia bąbelkowa" },
+            { cat: "mieszkanie", en: "change flats", pl: "zmienić mieszkanie" },
+            { cat: "mieszkanie", en: "move", pl: "przeprowadzać się" },
+            { cat: "mieszkanie", en: "move house", pl: "przeprowadzać się" },
+            { cat: "mieszkanie", en: "move in", pl: "wprowadzać się" },
+            { cat: "mieszkanie", en: "move into a new flat", pl: "wprowadzać się do nowego mieszkania" },
+            { cat: "mieszkanie", en: "move out", pl: "wyprowadzać się" },
+            { cat: "mieszkanie", en: "pack", pl: "pakować" },
+            { cat: "mieszkanie", en: "removal truck", pl: "ciężarówka firmy przeprowadzkowej" },
+            { cat: "mieszkanie", en: "stuff", pl: "rzeczy" },
+            { cat: "mieszkanie", en: "tape", pl: "taśma pakowa" },
+            { cat: "mieszkanie", en: "unpack", pl: "rozpakowywać się" },
+            { cat: "mieszkanie", en: "business park", pl: "centrum biznesowe" },
+            { cat: "mieszkanie", en: "commercialization", pl: "komercjalizacja" },
+            { cat: "mieszkanie", en: "condominium", pl: "mieszkanie własnościowe" },
+            { cat: "mieszkanie", en: "construction", pl: "budowa" },
+            { cat: "mieszkanie", en: "contemporary", pl: "współczesny" },
+            { cat: "mieszkanie", en: "development", pl: "zabudowa" },
+            { cat: "mieszkanie", en: "functional", pl: "funkcjonalny" },
+            { cat: "mieszkanie", en: "gentrification", pl: "gentryfikacja zmiana dzielnicy w strefę zdominowaną przez zamożnych mieszkańców" },
+            { cat: "mieszkanie", en: "industrialization", pl: "uprzemysłowienie" },
+            { cat: "mieszkanie", en: "landscape", pl: "krajobraz" },
+            { cat: "mieszkanie", en: "landing", pl: "półpiętro" },
+            { cat: "mieszkanie", en: "modernize", pl: "modernizować" },
+            { cat: "mieszkanie", en: "multi storey car park", pl: "parking wielopoziomowy" },
+            { cat: "mieszkanie", en: "renovation", pl: "renowacja" },
+            { cat: "mieszkanie", en: "rural", pl: "wiejski" },
+            { cat: "mieszkanie", en: "suburban", pl: "podmiejski" },
+            { cat: "mieszkanie", en: "sustainable", pl: "zrównoważony" },
+            { cat: "mieszkanie", en: "tear down", pl: "wyburzać" },
+            { cat: "mieszkanie", en: "urban", pl: "miejski" },
+            { cat: "mieszkanie", en: "base", pl: "baza" },
+            { cat: "mieszkanie", en: "homestay", pl: "zakwaterowanie u rodziny goszczącej" },
+            { cat: "mieszkanie", en: "possession", pl: "dobytek własność" },
+            { cat: "mieszkanie", en: "property", pl: "własność majątek" },
+            { cat: "mieszkanie", en: "appeal", pl: "urok" },
+            { cat: "mieszkanie", en: "environment", pl: "środowisko" },
+            { cat: "mieszkanie", en: "image", pl: "obraz" },
+            { cat: "mieszkanie", en: "lack", pl: "brak" },
+            { cat: "mieszkanie", en: "rebel", pl: "buntować się" },
+            { cat: "mieszkanie", en: "reflect", pl: "odzwierciedlać" },
+            { cat: "mieszkanie", en: "unacceptable", pl: "nie do zaakceptowania" },
+            { cat: "mieszkanie", en: "a tall order", pl: "prośba która jest trudna do spełnienia" },
+            { cat: "mieszkanie", en: "in order to", pl: "żeby" },
+            { cat: "mieszkanie", en: "order", pl: "rozkazywać" },
+            { cat: "mieszkanie", en: "orderly", pl: "uporządkowany" },
+            { cat: "mieszkanie", en: "out of order", pl: "nie na miejscu nieodpowiedni" },
+            { cat: "mieszkanie", en: "break up", pl: "rozstawać się" },
+            { cat: "mieszkanie", en: "calm down", pl: "uspokoić się" },
+            { cat: "mieszkanie", en: "clean up", pl: "sprzątać" },
+            { cat: "mieszkanie", en: "grow up", pl: "dorastać" },
+            { cat: "mieszkanie", en: "hang up", pl: "wieszać" },
+            { cat: "mieszkanie", en: "wipe down", pl: "wytrzeć" },
+
+            // 03. EDUKACJA
+            { cat: "edukacja", en: "art", pl: "plastyka" },
+            { cat: "edukacja", en: "biology", pl: "biologia" },
+            { cat: "edukacja", en: "business studies", pl: "przedsiębiorczość" },
+            { cat: "edukacja", en: "chemistry", pl: "chemia" },
+            { cat: "edukacja", en: "foreign languages", pl: "języki obce" },
+            { cat: "edukacja", en: "geography", pl: "geografia" },
+            { cat: "edukacja", en: "history", pl: "historia" },
+            { cat: "edukacja", en: "humanities", pl: "przedmioty humanistyczne" },
+            { cat: "edukacja", en: "information technology", pl: "informatyka" },
+            { cat: "edukacja", en: "literature", pl: "literatura" },
+            { cat: "edukacja", en: "maths", pl: "matematyka" },
+            { cat: "edukacja", en: "mathematics", pl: "matematyka" },
+            { cat: "edukacja", en: "music", pl: "muzyka" },
+            { cat: "edukacja", en: "physical education", pl: "wychowanie fizyczne" },
+            { cat: "edukacja", en: "physics", pl: "fizyka" },
+            { cat: "edukacja", en: "religious education", pl: "religia" },
+            { cat: "edukacja", en: "science", pl: "przedmioty ścisłe" },
+            { cat: "edukacja", en: "social studies", pl: "wiedza o społeczeństwie" },
+            { cat: "edukacja", en: "subject", pl: "przedmiot szkolny" },
+            { cat: "edukacja", en: "syllabus", pl: "program nauczania przedmiotu" },
+            { cat: "edukacja", en: "timetable", pl: "plan lekcji" },
+            { cat: "edukacja", en: "schedule", pl: "plan lekcji" },
+            { cat: "edukacja", en: "be bad at sth", pl: "być słabym z czegoś" },
+            { cat: "edukacja", en: "be good at sth", pl: "być dobrym z czegoś" },
+            { cat: "edukacja", en: "boring lesson", pl: "nudna lekcja" },
+            { cat: "edukacja", en: "carry out experiments", pl: "przeprowadzać eksperymenty" },
+            { cat: "edukacja", en: "concentrate", pl: "koncentrować się" },
+            { cat: "edukacja", en: "do a project", pl: "przygotowywać projekt" },
+            { cat: "edukacja", en: "do homework", pl: "odrabiać pracę domową" },
+            { cat: "edukacja", en: "do project work", pl: "przygotowywać projekt" },
+            { cat: "edukacja", en: "do revision", pl: "powtarzać" },
+            { cat: "edukacja", en: "engaging lesson", pl: "ciekawa lekcja" },
+            { cat: "edukacja", en: "examine", pl: "badać" },
+            { cat: "edukacja", en: "get homework", pl: "dostać pracę domową" },
+            { cat: "edukacja", en: "give a presentation", pl: "przedstawiać prezentację" },
+            { cat: "edukacja", en: "homework", pl: "praca domowa" },
+            { cat: "edukacja", en: "improve your language skills", pl: "doskonalić umiejętności językowe" },
+            { cat: "edukacja", en: "learn", pl: "uczyć się" },
+            { cat: "edukacja", en: "learn about other cultures", pl: "uczyć się o innych kulturach" },
+            { cat: "edukacja", en: "learn sth by heart", pl: "uczyć się czegoś na pamięć" },
+            { cat: "edukacja", en: "make a mistake", pl: "popełniać błąd" },
+            { cat: "edukacja", en: "make notes", pl: "robić notatki" },
+            { cat: "edukacja", en: "make progress", pl: "robić postępy" },
+            { cat: "edukacja", en: "memorize dates", pl: "zapamiętywać daty" },
+            { cat: "edukacja", en: "practical lesson", pl: "praktyczna lekcja" },
+            { cat: "edukacja", en: "read maps", pl: "czytać mapy" },
+            { cat: "edukacja", en: "revise", pl: "powtarzać" },
+            { cat: "edukacja", en: "set homework", pl: "zadawać pracę domową" },
+            { cat: "edukacja", en: "sketch", pl: "szkicować" },
+            { cat: "edukacja", en: "solve problems", pl: "rozwiązywać zadania" },
+            { cat: "edukacja", en: "study", pl: "studiować" },
+            { cat: "edukacja", en: "teach", pl: "uczyć kogoś" },
+            { cat: "edukacja", en: "use microscopes", pl: "używać mikroskopów" },
+            { cat: "edukacja", en: "use special equipment", pl: "używać specjalistycznego sprzętu" },
+            { cat: "edukacja", en: "useful lesson", pl: "przydatna lekcja" },
+            { cat: "edukacja", en: "work in groups", pl: "pracować w grupach" },
+            { cat: "edukacja", en: "work in pairs", pl: "pracować w parach" },
+            { cat: "edukacja", en: "ballet classes", pl: "lekcje baletu" },
+            { cat: "edukacja", en: "choir", pl: "chór" },
+            { cat: "edukacja", en: "do a language course", pl: "chodzić na kurs językowy" },
+            { cat: "edukacja", en: "do a sailing course", pl: "robić kurs żeglarski" },
+            { cat: "edukacja", en: "do sport", pl: "uprawiać sport" },
+            { cat: "edukacja", en: "do voluntary work", pl: "pracować społecznie" },
+            { cat: "edukacja", en: "drama club", pl: "kółko teatralne" },
+            { cat: "edukacja", en: "go on trips", pl: "jeździć na wycieczki" },
+            { cat: "edukacja", en: "learn an instrument", pl: "uczyć się gry na instrumencie" },
+            { cat: "edukacja", en: "organize charity events", pl: "organizować imprezy charytatywne" },
+            { cat: "edukacja", en: "play in a band", pl: "grać w zespole muzycznym" },
+            { cat: "edukacja", en: "practise sport", pl: "uprawiać sport" },
+            { cat: "edukacja", en: "take a language course", pl: "chodzić na kurs językowy" },
+            { cat: "edukacja", en: "cafeteria", pl: "bufet stołówka" },
+            { cat: "edukacja", en: "canteen", pl: "bufet stołówka" },
+            { cat: "edukacja", en: "classroom", pl: "klasa sala lekcyjna" },
+            { cat: "edukacja", en: "common room", pl: "świetlica" },
+            { cat: "edukacja", en: "computer room", pl: "sala komputerowa" },
+            { cat: "edukacja", en: "gym", pl: "sala gimnastyczna" },
+            { cat: "edukacja", en: "head teachers office", pl: "gabinet dyrektora" },
+            { cat: "edukacja", en: "lab", pl: "laboratorium" },
+            { cat: "edukacja", en: "library", pl: "biblioteka" },
+            { cat: "edukacja", en: "locker", pl: "szafka w szkole w szatni" },
+            { cat: "edukacja", en: "playground", pl: "boisko dziedziniec" },
+            { cat: "edukacja", en: "sports field", pl: "boisko sportowe" },
+            { cat: "edukacja", en: "staffroom", pl: "pokój nauczycielski" },
+            { cat: "edukacja", en: "absence", pl: "nieobecność" },
+            { cat: "edukacja", en: "assembly", pl: "apel" },
+            { cat: "edukacja", en: "attend a class", pl: "uczęszczać na lekcję" },
+            { cat: "edukacja", en: "attend a course", pl: "uczęszczać na kurs" },
+            { cat: "edukacja", en: "attendance", pl: "obecność" },
+            { cat: "edukacja", en: "be absent from sth", pl: "być nieobecnym na czymś" },
+            { cat: "edukacja", en: "be late for classes", pl: "spóźniać się na lekcje" },
+            { cat: "edukacja", en: "be present", pl: "być obecnym" },
+            { cat: "edukacja", en: "be suspended", pl: "być zawieszonym w prawach ucznia" },
+            { cat: "edukacja", en: "break", pl: "przerwa" },
+            { cat: "edukacja", en: "break up for the holidays", pl: "rozpocząć wakacje" },
+            { cat: "edukacja", en: "bully sb", pl: "znęcać się nad kimś" },
+            { cat: "edukacja", en: "bullying", pl: "prześladowanie znęcanie" },
+            { cat: "edukacja", en: "classmate", pl: "kolega koleżanka z klasy" },
+            { cat: "edukacja", en: "compulsory", pl: "obowiązkowy" },
+            { cat: "edukacja", en: "copy homework", pl: "spisywać pracę domową" },
+            { cat: "edukacja", en: "drop out of a course", pl: "przestać chodzić na kurs" },
+            { cat: "edukacja", en: "drop out of school", pl: "przestać chodzić do szkoły" },
+            { cat: "edukacja", en: "fall behind", pl: "zostawać w tyle mieć zaległości" },
+            { cat: "edukacja", en: "fit in", pl: "dopasować się dostosować się" },
+            { cat: "edukacja", en: "graduate", pl: "absolwent absolwentka" },
+            { cat: "edukacja", en: "graduate from a university", pl: "kończyć uniwersytet" },
+            { cat: "edukacja", en: "hand in", pl: "oddawać" },
+            { cat: "edukacja", en: "head teacher", pl: "dyrektor dyrektorka szkoły" },
+            { cat: "edukacja", en: "jog sbs memory", pl: "odświeżyć komuś pamięć" },
+            { cat: "edukacja", en: "leave school", pl: "ukończyć szkołę" },
+            { cat: "edukacja", en: "optional", pl: "nieobowiązkowy" },
+            { cat: "edukacja", en: "parents evening", pl: "wywiadówka" },
+            { cat: "edukacja", en: "play truant", pl: "chodzić na wagary" },
+            { cat: "edukacja", en: "pupil", pl: "uczeń uczennica" },
+            { cat: "edukacja", en: "put up your hand", pl: "podnieść rękę" },
+            { cat: "edukacja", en: "schoolmate", pl: "kolega koleżanka ze szkoły" },
+            { cat: "edukacja", en: "set books", pl: "lektury" },
+            { cat: "edukacja", en: "skip a class", pl: "opuszczać lekcję" },
+            { cat: "edukacja", en: "student", pl: "uczeń uczennica" },
+            { cat: "edukacja", en: "summer term", pl: "semestr letni" },
+            { cat: "edukacja", en: "take a gap year", pl: "zrobić sobie rok przerwy w nauce" },
+            { cat: "edukacja", en: "term", pl: "semestr" },
+            { cat: "edukacja", en: "uniform", pl: "mundurek szkolny" },
+            { cat: "edukacja", en: "winter term", pl: "semestr zimowy" },
+            { cat: "edukacja", en: "Bachelor of Arts BA", pl: "licencjat w dziedzinie nauk humanistycznych" },
+            { cat: "edukacja", en: "Bachelor of Science BSc", pl: "licencjat w dziedzinie nauk ścisłych" },
+            { cat: "edukacja", en: "degree", pl: "stopień naukowy" },
+            { cat: "edukacja", en: "diploma", pl: "dyplom" },
+            { cat: "edukacja", en: "get a degree", pl: "zdobyć stopień naukowy" },
+            { cat: "edukacja", en: "get into university", pl: "dostać się na uczelnię" },
+            { cat: "edukacja", en: "Master of Arts MA", pl: "magister nauk humanistycznych" },
+            { cat: "edukacja", en: "Master of Science MSc", pl: "magister nauk ścisłych" },
+            { cat: "edukacja", en: "pay tuition fees", pl: "płacić czesne" },
+            { cat: "edukacja", en: "PhD", pl: "doktor stopień naukowy" },
+            { cat: "edukacja", en: "professor", pl: "profesor" },
+            { cat: "edukacja", en: "scholarship", pl: "stypendium" },
+            { cat: "edukacja", en: "uni", pl: "uniwerek" },
+            { cat: "edukacja", en: "university", pl: "uniwersytet" },
+            { cat: "edukacja", en: "university education", pl: "wykształcenie wyższe" },
+            { cat: "edukacja", en: "university student", pl: "student studentka uniwersytetu" },
+            { cat: "edukacja", en: "boarding school", pl: "szkoła z internatem" },
+            { cat: "edukacja", en: "coeducational school", pl: "szkoła koedukacyjna" },
+            { cat: "edukacja", en: "college", pl: "szkoła wyższa kolegium" },
+            { cat: "edukacja", en: "comprehensive school", pl: "brytyjska państwowa szkoła średnia przyjmująca uczniów bez względu na wyniki w nauce" },
+            { cat: "edukacja", en: "education", pl: "wykształcenie" },
+            { cat: "edukacja", en: "entrance exam", pl: "egzamin wstępny" },
+            { cat: "edukacja", en: "grammar school", pl: "brytyjska państwowa szkoła średnia z egzaminami wstępnymi" },
+            { cat: "edukacja", en: "home schooling", pl: "edukacja domowa" },
+            { cat: "edukacja", en: "independent school", pl: "szkoła prywatna" },
+            { cat: "edukacja", en: "language school", pl: "szkoła językowa" },
+            { cat: "edukacja", en: "mixed school", pl: "szkoła koedukacyjna" },
+            { cat: "edukacja", en: "mock exam", pl: "egzamin próbny" },
+            { cat: "edukacja", en: "nursery school", pl: "przedszkole" },
+            { cat: "edukacja", en: "primary school", pl: "szkoła podstawowa" },
+            { cat: "edukacja", en: "private school", pl: "szkoła prywatna" },
+            { cat: "edukacja", en: "secondary school", pl: "szkoła średnia" },
+            { cat: "edukacja", en: "single sex school", pl: "szkoła tylko dla chłopców lub dziewcząt" },
+            { cat: "edukacja", en: "take an exam", pl: "przystępować do egzaminu" },
+            { cat: "edukacja", en: "vocational school", pl: "szkoła zawodowa" },
+            { cat: "edukacja", en: "develop new skills", pl: "rozwijać nowe umiejętności" },
+            { cat: "edukacja", en: "do a vocational course", pl: "odbywać szkolenie zawodowe" },
+            { cat: "edukacja", en: "gain knowledge", pl: "zdobywać wiedzę" },
+            { cat: "edukacja", en: "learn new skills", pl: "uczyć się nowych umiejętności" },
+            { cat: "edukacja", en: "motivation", pl: "motywacja" },
+            { cat: "edukacja", en: "personal goals", pl: "osobiste cele" },
+            { cat: "edukacja", en: "personal satisfaction", pl: "osobista satysfakcja" },
+            { cat: "edukacja", en: "self motivated", pl: "mający silną motywację wewnętrzną" },
+            { cat: "edukacja", en: "compasses", pl: "cyrkiel" },
+            { cat: "edukacja", en: "coursebook", pl: "podręcznik" },
+            { cat: "edukacja", en: "highlighter", pl: "zakreślacz" },
+            { cat: "edukacja", en: "marker", pl: "marker" },
+            { cat: "edukacja", en: "notebook", pl: "zeszyt" },
+            { cat: "edukacja", en: "PE kit", pl: "strój na WF" },
+            { cat: "edukacja", en: "pencil case", pl: "piórnik" },
+            { cat: "edukacja", en: "register", pl: "dziennik" },
+            { cat: "edukacja", en: "ruler", pl: "linijka" },
+            { cat: "edukacja", en: "schoolbag", pl: "tornister" },
+            { cat: "edukacja", en: "textbook", pl: "podręcznik" },
+            { cat: "edukacja", en: "whiteboard", pl: "tablica" },
+            { cat: "edukacja", en: "certificate", pl: "świadectwo" },
+            { cat: "edukacja", en: "cheat in a test", pl: "ściągać na teście" },
+            { cat: "edukacja", en: "do badly in a test", pl: "źle napisać sprawdzian" },
+            { cat: "edukacja", en: "do well in a test", pl: "dobrze napisać sprawdzian" },
+            { cat: "edukacja", en: "fail a test", pl: "nie zdać testu" },
+            { cat: "edukacja", en: "get a grade mark", pl: "dostawać ocenę" },
+            { cat: "edukacja", en: "give a grade mark", pl: "stawiać ocenę" },
+            { cat: "edukacja", en: "grade mark", pl: "ocena" },
+            { cat: "edukacja", en: "pass a test", pl: "zdać test" },
+            { cat: "edukacja", en: "prepare for a test", pl: "przygotowywać się do sprawdzianu" },
+            { cat: "edukacja", en: "report", pl: "świadectwo" },
+            { cat: "edukacja", en: "retake a test", pl: "pisać ponownie sprawdzian" },
+            { cat: "edukacja", en: "school certificate", pl: "świadectwo szkolne" },
+            { cat: "edukacja", en: "school report", pl: "świadectwo szkolne" },
+            { cat: "edukacja", en: "take a test", pl: "napisać test" },
+            { cat: "edukacja", en: "do a degree in sth", pl: "studiować coś" },
+            { cat: "edukacja", en: "do a project on sth", pl: "przygotowywać projekt na jakiś temat" },
+            { cat: "edukacja", en: "take a break", pl: "robić sobie przerwę" },
+            { cat: "edukacja", en: "broaden your mind", pl: "poszerzać horyzonty" },
+            { cat: "edukacja", en: "focus on sth", pl: "skupić się na czymś" },
+            { cat: "edukacja", en: "get involved", pl: "zaangażować się w coś" },
+            { cat: "edukacja", en: "get it", pl: "zrozumieć załapać" },
+            { cat: "edukacja", en: "top of the class", pl: "najlepszy w klasie" },
+            { cat: "edukacja", en: "astonishing", pl: "zadziwiający" },
+            { cat: "edukacja", en: "bored", pl: "znudzony" },
+            { cat: "edukacja", en: "boring", pl: "nudny" },
+            { cat: "edukacja", en: "confused", pl: "zdezorientowany" },
+            { cat: "edukacja", en: "confusing", pl: "niejasny mylący" },
+            { cat: "edukacja", en: "frightened", pl: "przerażony" },
+            { cat: "edukacja", en: "frightening", pl: "przerażający" },
+            { cat: "edukacja", en: "worrying", pl: "niepokojący" },
+            { cat: "edukacja", en: "stay behind", pl: "zostać np po lekcjach w szkole" },
+            { cat: "edukacja", en: "stay in", pl: "zostać w domu" },
+            { cat: "edukacja", en: "stay out", pl: "przebywać na zewnątrz" },
+            { cat: "edukacja", en: "stay over", pl: "przenocować u kogoś" },
+            { cat: "edukacja", en: "stay up", pl: "nie kłaść się do łóżka nie spać" },
+
+            // 04. PRACA
+            { cat: "praca", en: "accountant", pl: "księgowy księgowa" },
+            { cat: "praca", en: "actor", pl: "aktor" },
+            { cat: "praca", en: "actress", pl: "aktorka" },
+            { cat: "praca", en: "architect", pl: "architekt" },
+            { cat: "praca", en: "babysitter", pl: "opiekun opiekunka do dzieci" },
+            { cat: "praca", en: "barber", pl: "fryzjer" },
+            { cat: "praca", en: "beautician", pl: "kosmetyczka" },
+            { cat: "praca", en: "businessman", pl: "biznesmen" },
+            { cat: "praca", en: "businesswoman", pl: "bizneswoman" },
+            { cat: "praca", en: "car mechanic", pl: "mechanik samochodowy" },
+            { cat: "praca", en: "carpenter", pl: "stolarz" },
+            { cat: "praca", en: "cashier", pl: "kasjer kasjerka" },
+            { cat: "praca", en: "chef", pl: "kucharz szef kuchni" },
+            { cat: "praca", en: "clerk", pl: "urzędnik" },
+            { cat: "praca", en: "computer programmer", pl: "programista komputerowy" },
+            { cat: "praca", en: "construction worker", pl: "budowlaniec" },
+            { cat: "praca", en: "delivery person", pl: "kurier" },
+            { cat: "praca", en: "dentist", pl: "dentysta dentystka" },
+            { cat: "praca", en: "doctor", pl: "lekarz lekarka" },
+            { cat: "praca", en: "driver", pl: "kierowca" },
+            { cat: "praca", en: "driving instructor", pl: "instruktor instruktorka nauki jazdy" },
+            { cat: "praca", en: "electrician", pl: "elektryk" },
+            { cat: "praca", en: "engineer", pl: "inżynier" },
+            { cat: "praca", en: "factory worker", pl: "pracownik fabryczny" },
+            { cat: "praca", en: "farmer", pl: "rolnik" },
+            { cat: "praca", en: "firefighter", pl: "strażak" },
+            { cat: "praca", en: "flight attendant", pl: "steward stewardessa" },
+            { cat: "praca", en: "hairdresser", pl: "fryzjer fryzjerka" },
+            { cat: "praca", en: "housekeeper", pl: "gosposia" },
+            { cat: "praca", en: "interior designer", pl: "dekorator wnętrz" },
+            { cat: "praca", en: "journalist", pl: "dziennikarz dziennikarka" },
+            { cat: "praca", en: "lawyer", pl: "prawnik prawniczka" },
+            { cat: "praca", en: "librarian", pl: "bibliotekarz bibliotekarka" },
+            { cat: "praca", en: "lifeguard", pl: "ratownik ratowniczka" },
+            { cat: "praca", en: "miner", pl: "górnik" },
+            { cat: "praca", en: "model", pl: "model modelka" },
+            { cat: "praca", en: "musician", pl: "muzyk" },
+            { cat: "praca", en: "nurse", pl: "pielęgniarz pielęgniarka" },
+            { cat: "praca", en: "plumber", pl: "hydraulik" },
+            { cat: "praca", en: "police officer", pl: "policjant policjantka" },
+            { cat: "praca", en: "politician", pl: "polityk" },
+            { cat: "praca", en: "receptionist", pl: "recepcjonista recepcjonistka" },
+            { cat: "praca", en: "salesperson sales representative", pl: "przedstawiciel handlowy przedstawicielka handlowa" },
+            { cat: "praca", en: "scientist", pl: "naukowiec" },
+            { cat: "praca", en: "security guard", pl: "pracownik ochrony" },
+            { cat: "praca", en: "shop assistant", pl: "ekspedient ekspedientka" },
+            { cat: "praca", en: "social worker", pl: "pracownik społeczny" },
+            { cat: "praca", en: "soldier", pl: "żołnierz" },
+            { cat: "praca", en: "sports coach", pl: "trener trenerka" },
+            { cat: "praca", en: "stockbroker", pl: "makler giełdowy" },
+            { cat: "praca", en: "surgeon", pl: "chirurg" },
+            { cat: "praca", en: "tailor", pl: "krawiec" },
+            { cat: "praca", en: "taxi driver", pl: "taksówkarz" },
+            { cat: "praca", en: "translator", pl: "tłumacz tłumaczka" },
+            { cat: "praca", en: "vet", pl: "weterynarz" },
+            { cat: "praca", en: "waiter", pl: "kelner" },
+            { cat: "praca", en: "waitress", pl: "kelnerka" },
+            { cat: "praca", en: "web designer", pl: "projektant projektantka stron internetowych" },
+            { cat: "praca", en: "writer", pl: "pisarz pisarka" },
+            { cat: "praca", en: "act in a play film", pl: "grać w przedstawieniu filmie" },
+            { cat: "praca", en: "babysit", pl: "opiekować się dzieckiem" },
+            { cat: "praca", en: "check stock", pl: "sprawdzać zapasy w magazynie" },
+            { cat: "praca", en: "clear tables", pl: "sprzątać ze stołów" },
+            { cat: "praca", en: "cook prepare meals", pl: "gotować przygotowywać posiłki" },
+            { cat: "praca", en: "design buildings", pl: "projektować budynki" },
+            { cat: "praca", en: "develop software", pl: "tworzyć oprogramowanie" },
+            { cat: "praca", en: "do experiments", pl: "przeprowadzać eksperymenty" },
+            { cat: "praca", en: "do surgery", pl: "operować" },
+            { cat: "praca", en: "do volunteer work", pl: "pracować jako wolontariusz" },
+            { cat: "praca", en: "duty", pl: "obowiązek" },
+            { cat: "praca", en: "feed animals", pl: "karmić zwierzęta" },
+            { cat: "praca", en: "fix electricity", pl: "naprawiać elektryczność" },
+            { cat: "praca", en: "give sb a haircut", pl: "strzyc kogoś" },
+            { cat: "praca", en: "grow fruit vegetables", pl: "uprawiać owoce warzywa" },
+            { cat: "praca", en: "help people in need", pl: "pomagać potrzebującym" },
+            { cat: "praca", en: "operate a till", pl: "obsługiwać kasę fiskalną" },
+            { cat: "praca", en: "perform on stage", pl: "występować na scenie" },
+            { cat: "praca", en: "pick fruit", pl: "zbierać owoce" },
+            { cat: "praca", en: "price goods", pl: "wyceniać towary" },
+            { cat: "praca", en: "repair a car", pl: "naprawiać samochód" },
+            { cat: "praca", en: "run a business", pl: "prowadzić firmę" },
+            { cat: "praca", en: "serve customers", pl: "obsługiwać klientów" },
+            { cat: "praca", en: "serve food and drinks", pl: "podawać jedzenie i napoje" },
+            { cat: "praca", en: "summer job", pl: "praca sezonowa" },
+            { cat: "praca", en: "take on a job", pl: "podejmować się jakiejś pracy" },
+            { cat: "praca", en: "take orders", pl: "przyjmować zamówienia" },
+            { cat: "praca", en: "work in a camp", pl: "pracować na obozie" },
+            { cat: "praca", en: "work in a lab", pl: "pracować w laboratorium" },
+            { cat: "praca", en: "work on assembly line", pl: "pracować przy taśmie montażowej" },
+            { cat: "praca", en: "badly paid", pl: "źle płatny" },
+            { cat: "praca", en: "boss", pl: "szef szefowa" },
+            { cat: "praca", en: "colleague", pl: "kolega koleżanka z pracy" },
+            { cat: "praca", en: "dull", pl: "nudny" },
+            { cat: "praca", en: "earn", pl: "zarabiać" },
+            { cat: "praca", en: "employee", pl: "pracownik" },
+            { cat: "praca", en: "employer", pl: "pracodawca" },
+            { cat: "praca", en: "full time", pl: "w pełnym wymiarze godzin" },
+            { cat: "praca", en: "job", pl: "praca za którą otrzymuje się wynagrodzenie" },
+            { cat: "praca", en: "job market", pl: "rynek pracy" },
+            { cat: "praca", en: "job satisfaction", pl: "zadowolenie z pracy" },
+            { cat: "praca", en: "make a living doing sth", pl: "zarabiać na życie robiąc coś" },
+            { cat: "praca", en: "manual", pl: "fizyczny" },
+            { cat: "praca", en: "part time", pl: "na pół etatu" },
+            { cat: "praca", en: "permanent", pl: "stały" },
+            { cat: "praca", en: "position", pl: "stanowisko" },
+            { cat: "praca", en: "salary", pl: "pensja" },
+            { cat: "praca", en: "tedious", pl: "nudny" },
+            { cat: "praca", en: "temporary", pl: "tymczasowy" },
+            { cat: "praca", en: "training", pl: "szkolenie" },
+            { cat: "praca", en: "wages", pl: "zapłata tygodniowa" },
+            { cat: "praca", en: "well paid", pl: "dobrze płatny" },
+            { cat: "praca", en: "work", pl: "praca fizyczna lub umysłowa" },
+            { cat: "praca", en: "accept a job offer", pl: "przyjąć ofertę pracy" },
+            { cat: "praca", en: "apply for a job", pl: "starać się o pracę" },
+            { cat: "praca", en: "apply for a position", pl: "starać się o stanowisko" },
+            { cat: "praca", en: "be offered a job", pl: "dostać propozycję pracy" },
+            { cat: "praca", en: "be self employed", pl: "prowadzić własną firmę" },
+            { cat: "praca", en: "candidate", pl: "kandydat kandydatka" },
+            { cat: "praca", en: "career", pl: "kariera" },
+            { cat: "praca", en: "career development", pl: "rozwój kariery" },
+            { cat: "praca", en: "career prospects", pl: "perspektywy rozwoju kariery" },
+            { cat: "praca", en: "come for an interview", pl: "przyjść na rozmowę kwalifikacyjną" },
+            { cat: "praca", en: "communication skills", pl: "umiejętności komunikacyjne" },
+            { cat: "praca", en: "complete an application form", pl: "uzupełnić podanie o pracę" },
+            { cat: "praca", en: "covering letter", pl: "list motywacyjny" },
+            { cat: "praca", en: "curriculum vitae", pl: "życiorys" },
+            { cat: "praca", en: "CV", pl: "życiorys" },
+            { cat: "praca", en: "do an internship", pl: "obywać praktyki staż" },
+            { cat: "praca", en: "employment contract", pl: "umowa o pracę" },
+            { cat: "praca", en: "enrol on a course", pl: "zapisać się na kurs" },
+            { cat: "praca", en: "experience", pl: "doświadczenie" },
+            { cat: "praca", en: "get experience", pl: "zdobywać doświadczenie" },
+            { cat: "praca", en: "have a career in sth", pl: "robić karierę w jakiejś branży" },
+            { cat: "praca", en: "have a degree in sth", pl: "mieć wykształcenie w jakiejś dziedzinie" },
+            { cat: "praca", en: "have a diploma in sth", pl: "mieć dyplom w jakiejś dziedzinie" },
+            { cat: "praca", en: "have a university education", pl: "mieć wyższe wykształcenie" },
+            { cat: "praca", en: "have special training", pl: "mieć odpowiednie szkolenie" },
+            { cat: "praca", en: "interview", pl: "rozmowa kwalifikacyjna" },
+            { cat: "praca", en: "interviewer", pl: "osoba przeprowadzająca rozmowę kwalifikacyjną" },
+            { cat: "praca", en: "job advert advertisement", pl: "ogłoszenie o pracę" },
+            { cat: "praca", en: "job application", pl: "podanie o pracę" },
+            { cat: "praca", en: "job centre", pl: "biuro pośrednictwa pracy" },
+            { cat: "praca", en: "job offer", pl: "oferta pracy" },
+            { cat: "praca", en: "look for a job", pl: "szukać pracy" },
+            { cat: "praca", en: "office work", pl: "praca biurowa" },
+            { cat: "praca", en: "opening", pl: "wolne stanowisko" },
+            { cat: "praca", en: "profession", pl: "zawód wymagający wysokich kwalifikacji" },
+            { cat: "praca", en: "qualifications", pl: "kwalifikacje" },
+            { cat: "praca", en: "referee", pl: "osoba udzielająca referencji" },
+            { cat: "praca", en: "references", pl: "referencje" },
+            { cat: "praca", en: "sign a contract", pl: "podpisywać umowę" },
+            { cat: "praca", en: "turn down a job offer", pl: "odrzucić ofertę pracy" },
+            { cat: "praca", en: "vacancy", pl: "wakat" },
+            { cat: "praca", en: "work experience", pl: "doświadczenie zawodowe" },
+            { cat: "praca", en: "building site", pl: "plac budowy" },
+            { cat: "praca", en: "call centre", pl: "infolinia" },
+            { cat: "praca", en: "corporation", pl: "korporacja" },
+            { cat: "praca", en: "department store", pl: "dom towarowy" },
+            { cat: "praca", en: "factory", pl: "fabryka" },
+            { cat: "praca", en: "fitness centre", pl: "klub fitness" },
+            { cat: "praca", en: "garage", pl: "warsztat samochodowy" },
+            { cat: "praca", en: "home office", pl: "domowe biuro" },
+            { cat: "praca", en: "office", pl: "biuro" },
+            { cat: "praca", en: "stock exchange", pl: "giełda papierów wartościowych" },
+            { cat: "praca", en: "warehouse", pl: "magazyn" },
+            { cat: "praca", en: "work from home", pl: "pracować z domu" },
+            { cat: "praca", en: "work in retail", pl: "pracować w handlu detalicznym" },
+            { cat: "praca", en: "work remotely", pl: "pracować zdalnie" },
+            { cat: "praca", en: "age discrimination", pl: "dyskryminacja ze względu na wiek" },
+            { cat: "praca", en: "be in charge of sth", pl: "być odpowiedzialnym za coś kierować czymś" },
+            { cat: "praca", en: "be on sick leave", pl: "być na zwolnieniu lekarskim" },
+            { cat: "praca", en: "claim travel expenses", pl: "wnioskować o zwrot kosztów" },
+            { cat: "praca", en: "clock in out", pl: "odbić kartę pracowniczą wchodząc do wychodząc z pracy" },
+            { cat: "praca", en: "commission", pl: "prowizja" },
+            { cat: "praca", en: "do overtime", pl: "pracować po godzinach w nadgodzinach" },
+            { cat: "praca", en: "employ", pl: "zatrudniać" },
+            { cat: "praca", en: "flexible working hours", pl: "elastyczne godziny pracy" },
+            { cat: "praca", en: "get a bonus", pl: "dostać premię" },
+            { cat: "praca", en: "get a pay rise", pl: "dostać podwyżkę" },
+            { cat: "praca", en: "get promoted", pl: "dostać awans" },
+            { cat: "praca", en: "hire", pl: "zatrudniać wynajmować" },
+            { cat: "praca", en: "join a trade union", pl: "wstąpić do związku zawodowego" },
+            { cat: "praca", en: "management", pl: "zarząd dyrekcja" },
+            { cat: "praca", en: "payroll", pl: "lista płac" },
+            { cat: "praca", en: "pension", pl: "emerytura świadczenie pieniężne" },
+            { cat: "praca", en: "perk", pl: "świadczenie dodatkowe" },
+            { cat: "praca", en: "retire", pl: "przechodzić na emeryturę" },
+            { cat: "praca", en: "retirement", pl: "emerytura" },
+            { cat: "praca", en: "take a day off", pl: "brać dzień wolny" },
+            { cat: "praca", en: "work as a teacher", pl: "pracować jako nauczyciel" },
+            { cat: "praca", en: "work for a company", pl: "pracować dla firmy" },
+            { cat: "praca", en: "work long hours", pl: "długo pracować" },
+            { cat: "praca", en: "work shifts", pl: "pracować w systemie zmianowym" },
+            { cat: "praca", en: "working hours", pl: "godziny pracy" },
+            { cat: "praca", en: "be fired", pl: "zostać wyrzuconym z pracy" },
+            { cat: "praca", en: "be out of work", pl: "być bez pracy" },
+            { cat: "praca", en: "give up a job", pl: "zrezygnować z pracy zwolnić się" },
+            { cat: "praca", en: "go on strike", pl: "strajkować" },
+            { cat: "praca", en: "lay sb off", pl: "zwalniać kogoś z powodu redukcji etatów" },
+            { cat: "praca", en: "unemployed", pl: "bezrobotny" },
+            { cat: "praca", en: "unemployment", pl: "bezrobocie" },
+            { cat: "praca", en: "quit", pl: "rzucać pracę" },
+            { cat: "praca", en: "resign", pl: "rezygnować z pracy" },
+            { cat: "praca", en: "advance your career", pl: "rozwijać karierę" },
+            { cat: "praca", en: "career path", pl: "ścieżka kariery" },
+            { cat: "praca", en: "change career", pl: "zmienić ścieżkę zawodową" },
+            { cat: "praca", en: "change location", pl: "zmienić miejsce pracy" },
+            { cat: "praca", en: "downward mobility", pl: "cofnięcie się do gorzej płatnego zajęcia" },
+            { cat: "praca", en: "improve teamwork", pl: "poprawiać pracę zespołową" },
+            { cat: "praca", en: "increase productivity", pl: "zwiększać produktywność" },
+            { cat: "praca", en: "middle class background", pl: "pochodzić z klasy średniej" },
+            { cat: "praca", en: "take on a new role", pl: "podjąć się nowej roli" },
+            { cat: "praca", en: "upward mobility", pl: "zmiana pracy na lepszą" },
+            { cat: "praca", en: "working class background", pl: "pochodzić z klasy robotniczej" },
+            { cat: "praca", en: "agenda", pl: "lista spraw" },
+            { cat: "praca", en: "apprenticeship", pl: "praktyka zawodowa staż" },
+            { cat: "praca", en: "benefits", pl: "korzyści" },
+            { cat: "praca", en: "own sth", pl: "posiadać coś" },
+            { cat: "praca", en: "trustworthy", pl: "godny zaufania" },
+            { cat: "praca", en: "be flexible", pl: "być elastycznym" },
+            { cat: "praca", en: "get paid", pl: "otrzymać wynagrodzenie" },
+            { cat: "praca", en: "get work out of the way", pl: "uporać się z pracą" },
+            { cat: "praca", en: "have an early start", pl: "zaczynać wcześnie pracę" },
+            { cat: "praca", en: "take part in sth", pl: "brać udział w czymś" },
+            { cat: "praca", en: "the pay", pl: "wynagrodzenie" },
+            { cat: "praca", en: "time off", pl: "czas wolny" }
+        ];
+
+        let words = [];
+        let activeStudentNr = null;
+        let activeChapter = 'all'; 
+        let activeZoneFilter = 'all'; 
+        let direction = 'en-to-pl'; 
+        let activeTab = 'training'; 
+        let currentWord = null;
+        let isProcessing = false;
+        let waitingForNext = false; 
+        let sessionStreak = 0;
+
+        // Quick Review State (30 questions)
+        let isQuickReview = false;
+        let quickReviewPool = [];
+        let quickReviewIndex = 0;
+        let quickReviewHits = 0;
+        let quickReviewMistakes = 0;
+
+        function getStudentStorageKey(nr) {
+            return `jacksparrow_progress_student_${nr}`;
+        }
+
+        function getStudentSessionKey(nr) {
+            return `${SESSION_STATE_PREFIX}${nr}`;
+        }
+
+        function initApp() {
+            const savedSettings = localStorage.getItem(SETTINGS_KEY);
+            if (savedSettings) {
+                try {
+                    const parsed = JSON.parse(savedSettings);
+                    if (parsed.activeChapter) activeChapter = parsed.activeChapter;
+                    if (parsed.activeZoneFilter) activeZoneFilter = parsed.activeZoneFilter;
+                    if (parsed.direction) direction = parsed.direction;
+                } catch (e) {}
+            }
+
+            const labelDir = document.getElementById('label-direction');
+            if (labelDir) labelDir.textContent = direction === 'en-to-pl' ? 'EN ➔ PL' : 'PL ➔ EN';
+            syncChapterHeaderUI();
+
+            const savedStudentNr = localStorage.getItem(ACTIVE_STUDENT_KEY);
+            if (savedStudentNr) {
+                setStudent(savedStudentNr);
+            } else {
+                openStudentModal();
+            }
+        }
+
+        function openStudentModal() {
+            const modal = document.getElementById('student-modal');
+            const recentContainer = document.getElementById('recent-students-container');
+            const recentList = document.getElementById('recent-students-list');
+            const input = document.getElementById('input-student-nr');
+
+            modal.classList.remove('hidden');
+            input.value = activeStudentNr || '';
+            setTimeout(() => input.focus(), 50);
+
+            const savedRegistry = localStorage.getItem(ALL_STUDENTS_LIST_KEY);
+            if (savedRegistry) {
+                try {
+                    const list = JSON.parse(savedRegistry);
+                    if (Array.isArray(list) && list.length > 0) {
+                        recentContainer.classList.remove('hidden');
+                        recentList.innerHTML = list.map(num => `
+                            <button type="button" onclick="setStudent('${num}'); closeModal('student-modal');" 
+                                class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-brand-600 border border-slate-700 text-xs font-semibold text-slate-200 transition">
+                                Nr ${num}
+                            </button>
+                        `).join('');
+                    } else {
+                        recentContainer.classList.add('hidden');
+                    }
+                } catch(e) {
+                    recentContainer.classList.add('hidden');
+                }
+            }
+        }
+
+        function handleStudentSubmit(e) {
+            e.preventDefault();
+            const val = document.getElementById('input-student-nr').value.trim();
+            if (!val) return;
+            setStudent(val);
+            document.getElementById('student-modal').classList.add('hidden');
+        }
+
+        function setStudent(nr) {
+            activeStudentNr = nr;
+            localStorage.setItem(ACTIVE_STUDENT_KEY, nr);
+            const studentLabel = document.getElementById('label-student-nr');
+            if (studentLabel) studentLabel.textContent = `Nr ${nr}`;
+
+            let list = [];
+            const savedRegistry = localStorage.getItem(ALL_STUDENTS_LIST_KEY);
+            if (savedRegistry) {
+                try { list = JSON.parse(savedRegistry); } catch(e){}
+            }
+            if (!list.includes(nr)) {
+                list.push(nr);
+                localStorage.setItem(ALL_STUDENTS_LIST_KEY, JSON.stringify(list));
+            }
+
+            loadStudentProgress(nr);
+            const studentModal = document.getElementById('student-modal');
+            if (studentModal) studentModal.classList.add('hidden');
+        }
+
+        function loadStudentProgress(studentNr) {
+            const savedProgress = localStorage.getItem(getStudentStorageKey(studentNr));
+            let progressMap = {};
+            if (savedProgress) {
+                try {
+                    progressMap = JSON.parse(savedProgress);
+                } catch (e) {}
+            }
+
+            words = RAW_OXFORD_DATA.map((item, idx) => {
+                const id = 'w_' + idx;
+                const p = progressMap[id] || {};
+                return {
+                    id,
+                    cat: item.cat,
+                    en: item.en,
+                    pl: item.pl,
+                    zone: p.zone || 'new',
+                    errors: p.errors || 0,
+                    corrects: p.corrects || 0,
+                    lastAnsweredAt: p.lastAnsweredAt || null
+                };
+            });
+
+            const savedSession = localStorage.getItem(getStudentSessionKey(studentNr));
+            let restoredQuickReview = false;
+
+            if (savedSession) {
+                try {
+                    const session = JSON.parse(savedSession);
+                    if (typeof session.streak === 'number') sessionStreak = session.streak;
+                    if (session.quickReview && session.quickReview.isActive && Array.isArray(session.quickReview.poolIds)) {
+                        quickReviewPool = session.quickReview.poolIds.map(id => words.find(w => w.id === id)).filter(Boolean);
+                        quickReviewIndex = session.quickReview.index || 0;
+                        quickReviewHits = session.quickReview.hits || 0;
+                        quickReviewMistakes = session.quickReview.mistakes || 0;
+                        isQuickReview = (quickReviewIndex < quickReviewPool.length && quickReviewPool.length > 0);
+                        restoredQuickReview = isQuickReview;
+                    }
+                } catch (e) {}
+            }
+
+            document.getElementById('streak-count').textContent = sessionStreak;
+            
+            if (restoredQuickReview) {
+                document.getElementById('quick-review-banner').classList.remove('hidden');
+                updateQuickReviewUI();
+            } else {
+                document.getElementById('quick-review-banner').classList.add('hidden');
+            }
+
+            updateZoneFilterCounts();
+            renderChaptersView();
+            nextQuestion();
+        }
+
+        function saveProgress() {
+            if (!activeStudentNr) return;
+            const map = {};
+            words.forEach(w => {
+                if (w.zone !== 'new' || w.errors > 0 || w.corrects > 0) {
+                    map[w.id] = { 
+                        zone: w.zone, 
+                        errors: w.errors, 
+                        corrects: w.corrects,
+                        lastAnsweredAt: w.lastAnsweredAt 
+                    };
+                }
+            });
+            localStorage.setItem(getStudentStorageKey(activeStudentNr), JSON.stringify(map));
+
+            const sessionData = {
+                lastWordId: currentWord ? currentWord.id : null,
+                streak: sessionStreak,
+                quickReview: {
+                    isActive: isQuickReview,
+                    poolIds: quickReviewPool.map(w => w.id),
+                    index: quickReviewIndex,
+                    hits: quickReviewHits,
+                    mistakes: quickReviewMistakes
+                }
+            };
+            localStorage.setItem(getStudentSessionKey(activeStudentNr), JSON.stringify(sessionData));
+
+            saveUserSettings();
+            updateZoneFilterCounts();
+            renderChaptersView();
+            notifySaved();
+        }
+
+        function notifySaved() {
+            const ind = document.getElementById('save-status-indicator');
+            if (!ind) return;
+            ind.innerHTML = `<i class="fa-solid fa-check text-[9px]"></i><span>Zapisano</span>`;
+            ind.classList.remove('text-emerald-400');
+            ind.classList.add('text-brand-400');
+            setTimeout(() => {
+                if (ind) {
+                    ind.innerHTML = `<i class="fa-solid fa-floppy-disk text-[9px]"></i><span>Autozapis aktywny</span>`;
+                    ind.classList.remove('text-brand-400');
+                    ind.classList.add('text-emerald-400');
+                }
+            }, 900);
+        }
+
+        function saveUserSettings() {
+            const settings = { activeChapter, activeZoneFilter, direction };
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        }
+
+        function getChapterTitle(catId) {
+            const found = CHAPTERS_META.find(c => c.id === catId);
+            return found ? found.title : 'Wszystkie rozdziały';
+        }
+
+        function syncChapterHeaderUI() {
+            const title = getChapterTitle(activeChapter);
+            const headerPill = document.getElementById('header-active-chapter-pill');
+            if (headerPill) headerPill.textContent = title;
+            const trainingChName = document.getElementById('training-chapter-name');
+            if (trainingChName) trainingChName.textContent = title;
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            const viewTraining = document.getElementById('view-training');
+            const viewChapters = document.getElementById('view-chapters');
+            const btnTraining = document.getElementById('tab-btn-training');
+            const btnChapters = document.getElementById('tab-btn-chapters');
+
+            if (tab === 'training') {
+                viewTraining.classList.remove('hidden');
+                viewChapters.classList.add('hidden');
+
+                btnTraining.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-brand-600 text-white shadow-sm";
+                btnChapters.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60";
+
+                updateZoneFilterCounts();
+                nextQuestion();
+            } else {
+                viewTraining.classList.add('hidden');
+                viewChapters.classList.remove('hidden');
+
+                btnChapters.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-brand-600 text-white shadow-sm";
+                btnTraining.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60";
+
+                renderChaptersView();
+            }
+        }
+
+        function selectChapter(catId) {
+            activeChapter = catId;
+            isQuickReview = false;
+            document.getElementById('quick-review-banner').classList.add('hidden');
+            syncChapterHeaderUI();
+            saveUserSettings();
+            saveProgress();
+            switchTab('training');
+        }
+
+        function startQuickReview(catId = activeChapter) {
+            activeChapter = catId;
+            syncChapterHeaderUI();
+            const sourcePool = activeChapter === 'all' ? words : words.filter(w => w.cat === activeChapter);
+            if (sourcePool.length === 0) return;
+
+            const sortedByNeed = [...sourcePool].sort((a, b) => {
+                const priority = { red: 0, new: 1, yellow: 2, green: 3 };
+                return (priority[a.zone] || 1) - (priority[b.zone] || 1) || (Math.random() - 0.5);
+            });
+
+            quickReviewPool = sortedByNeed.slice(0, Math.min(30, sortedByNeed.length));
+            quickReviewIndex = 0;
+            quickReviewHits = 0;
+            quickReviewMistakes = 0;
+            isQuickReview = true;
+
+            document.getElementById('quick-review-banner').classList.remove('hidden');
+            saveProgress();
+            switchTab('training');
+            nextQuestion();
+        }
+
+        function updateQuickReviewUI() {
+            if (!isQuickReview) return;
+            const currentNr = quickReviewIndex + 1;
+            const total = quickReviewPool.length;
+            document.getElementById('quick-review-counter').textContent = `Pytanie ${currentNr} / ${total}`;
+            const pct = (currentNr / total) * 100;
+            document.getElementById('quick-review-progress-bar').style.width = `${pct}%`;
+        }
+
+        function finishQuickReview() {
+            const modal = document.getElementById('summary-modal');
+            const total = quickReviewPool.length;
+            const pct = Math.round((quickReviewHits / total) * 100);
+
+            document.getElementById('summary-score-percent').textContent = `${pct}%`;
+            document.getElementById('summary-hits').textContent = quickReviewHits;
+            document.getElementById('summary-mistakes').textContent = quickReviewMistakes;
+
+            modal.classList.remove('hidden');
+            isQuickReview = false;
+            document.getElementById('quick-review-banner').classList.add('hidden');
+            saveProgress();
+        }
+
+        function restartQuickReview() {
+            document.getElementById('summary-modal').classList.add('hidden');
+            startQuickReview(activeChapter);
+        }
+
+        function exitQuickReview() {
+            document.getElementById('summary-modal').classList.add('hidden');
+            isQuickReview = false;
+            document.getElementById('quick-review-banner').classList.add('hidden');
+            saveProgress();
+            nextQuestion();
+        }
+
+        function renderChaptersView() {
+            const grid = document.getElementById('chapters-grid');
+            grid.innerHTML = '';
+
+            CHAPTERS_META.forEach(ch => {
+                const chWords = ch.id === 'all' ? words : words.filter(w => w.cat === ch.id);
+                const total = chWords.length;
+                const red = chWords.filter(w => w.zone === 'red').length;
+                const yellow = chWords.filter(w => w.zone === 'yellow').length;
+                const green = chWords.filter(w => w.zone === 'green').length;
+                const newWords = chWords.filter(w => w.zone === 'new').length;
+                const doneWords = total - newWords;
+                const donePct = total > 0 ? Math.round((doneWords / total) * 100) : 0;
+                const isCurrent = activeChapter === ch.id;
+
+                const card = document.createElement('div');
+                card.className = `p-4 sm:p-5 rounded-2xl border transition relative flex flex-col justify-between ${
+                    isCurrent 
+                        ? 'bg-slate-850 border-brand-500/60 shadow-lg shadow-brand-500/5 ring-1 ring-brand-500/30' 
+                        : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                }`;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between gap-3 mb-2">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-lg ${isCurrent ? 'bg-brand-600 text-white' : 'bg-slate-800 text-slate-400'} flex items-center justify-center text-xs">
+                                    <i class="fa-solid ${ch.icon}"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-sm text-white">${ch.title}</h3>
+                                    <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">${ch.desc}</p>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                ${isCurrent ? '<span class="text-[10px] font-semibold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20">Aktywny</span>' : ''}
+                                <div class="text-[10px] text-slate-400 font-mono mt-1">${doneWords}/${total} (${donePct}%)</div>
+                            </div>
+                        </div>
+
+                        <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800 mb-3">
+                            <div class="bg-brand-500 h-full transition-all duration-300" style="width: ${donePct}%"></div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-1.5 my-2.5 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                            <div class="text-center">
+                                <div class="text-[10px] text-slate-500">Razem</div>
+                                <div class="text-xs font-bold text-slate-200 mt-0.5">${total}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-[10px] text-rose-400 font-medium flex items-center justify-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Czerwone
+                                </div>
+                                <div class="text-xs font-bold text-rose-400 mt-0.5">${red}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-[10px] text-amber-400 font-medium flex items-center justify-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Żółte
+                                </div>
+                                <div class="text-xs font-bold text-amber-400 mt-0.5">${yellow}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-[10px] text-emerald-400 font-medium flex items-center justify-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Zielone
+                                </div>
+                                <div class="text-xs font-bold text-emerald-400 mt-0.5">${green}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-800/70">
+                        <span class="text-[11px] text-slate-500">
+                            Do zrobienia: <strong class="text-slate-300 font-medium">${newWords}</strong>
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="startQuickReview('${ch.id}')" title="30 pytań z tego działu"
+                                class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition flex items-center gap-1">
+                                <i class="fa-solid fa-bolt text-[10px]"></i>
+                                <span>30 pytań</span>
+                            </button>
+                            <button onclick="selectChapter('${ch.id}')" 
+                                class="px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
+                                    isCurrent 
+                                        ? 'bg-brand-600 hover:bg-brand-500 text-white' 
+                                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                                }">
+                                <span>${isCurrent ? 'Wznów naukę' : 'Wybierz'}</span>
+                                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function updateZoneFilterCounts() {
+            const currentPool = activeChapter === 'all' ? words : words.filter(w => w.cat === activeChapter);
+
+            const green = currentPool.filter(w => w.zone === 'green').length;
+            const yellow = currentPool.filter(w => w.zone === 'yellow').length;
+            const red = currentPool.filter(w => w.zone === 'red').length;
+            const touched = currentPool.length - currentPool.filter(w => w.zone === 'new').length;
+
+            const countAll = document.getElementById('count-all');
+            const countGreen = document.getElementById('count-green');
+            const countYellow = document.getElementById('count-yellow');
+            const countRed = document.getElementById('count-red');
+            const progFraction = document.getElementById('training-progress-fraction');
+
+            if (countAll) countAll.textContent = currentPool.length;
+            if (countGreen) countGreen.textContent = green;
+            if (countYellow) countYellow.textContent = yellow;
+            if (countRed) countRed.textContent = red;
+            if (progFraction) progFraction.textContent = `${touched}/${currentPool.length}`;
+
+            ['all', 'red', 'yellow', 'green'].forEach(f => {
+                const btn = document.getElementById(`filter-btn-${f}`);
+                if (!btn) return;
+                if (f === activeZoneFilter) {
+                    btn.classList.add('border-brand-500', 'bg-brand-500/10', 'text-brand-400');
+                    btn.classList.remove('border-slate-800', 'bg-slate-900/80');
+                } else {
+                    btn.classList.remove('border-brand-500', 'bg-brand-500/10', 'text-brand-400');
+                    btn.classList.add('border-slate-800', 'bg-slate-900/80');
+                }
+            });
+        }
+
+        function setFilter(filter) {
+            activeZoneFilter = filter;
+            isQuickReview = false;
+            document.getElementById('quick-review-banner').classList.add('hidden');
+            saveUserSettings();
+            saveProgress();
+            updateZoneFilterCounts();
+            nextQuestion();
+        }
+
+        function toggleDirection() {
+            direction = direction === 'en-to-pl' ? 'pl-to-en' : 'en-to-pl';
+            const labelDir = document.getElementById('label-direction');
+            if (labelDir) labelDir.textContent = direction === 'en-to-pl' ? 'EN ➔ PL' : 'PL ➔ EN';
+            saveUserSettings();
+            saveProgress();
+            nextQuestion();
+        }
+
+        function getActiveQuestionPool() {
+            if (isQuickReview) return quickReviewPool;
+            let pool = activeChapter === 'all' ? words : words.filter(w => w.cat === activeChapter);
+            if (activeZoneFilter !== 'all') {
+                pool = pool.filter(w => w.zone === activeZoneFilter);
+            }
+            return pool;
+        }
+
+        function nextQuestion() {
+            isProcessing = false;
+            waitingForNext = false;
+            document.getElementById('feedback-message').textContent = '';
+            document.getElementById('wrong-answer-panel').classList.add('hidden');
+
+            if (isQuickReview) {
+                if (quickReviewIndex >= quickReviewPool.length) {
+                    finishQuickReview();
+                    return;
+                }
+                updateQuickReviewUI();
+                currentWord = quickReviewPool[quickReviewIndex];
+                renderCurrentQuestion();
+                return;
+            }
+
+            const pool = getActiveQuestionPool();
+            const quizBox = document.getElementById('quiz-box');
+            const emptyState = document.getElementById('empty-state');
+            const emptyDesc = document.getElementById('empty-state-desc');
+
+            if (pool.length === 0) {
+                quizBox.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+
+                const filterName = {
+                    red: 'czerwonej (błędne)',
+                    yellow: 'żółtej (poprawione z czerwonych)',
+                    green: 'zielonej (utrwalone)'
+                }[activeZoneFilter] || '';
+
+                emptyDesc.textContent = filterName 
+                    ? `W strefie ${filterName} nie ma jeszcze słówek dla działu: ${getChapterTitle(activeChapter)}.`
+                    : `Brak słówek do wyświetlenia.`;
+                return;
+            }
+
+            quizBox.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            const unhandled = pool.filter(w => w.zone === 'new');
+            const redPool = pool.filter(w => w.zone === 'red');
+            const yellowPool = pool.filter(w => w.zone === 'yellow');
+
+            let candidateGroup = pool;
+            if (activeZoneFilter === 'all') {
+                if (unhandled.length > 0) {
+                    candidateGroup = unhandled;
+                } else if (redPool.length > 0) {
+                    candidateGroup = redPool;
+                } else if (yellowPool.length > 0) {
+                    candidateGroup = yellowPool;
+                }
+            }
+
+            const candidates = (candidateGroup.length > 1 && currentWord) 
+                ? candidateGroup.filter(w => w.id !== currentWord.id) 
+                : candidateGroup;
+
+            currentWord = candidates[Math.floor(Math.random() * candidates.length)];
+            renderCurrentQuestion();
+        }
+
+        function renderCurrentQuestion() {
+            const promptWordEl = document.getElementById('prompt-word');
+            const promptSubEl = document.getElementById('prompt-subtitle');
+            const badgeEl = document.getElementById('active-zone-badge');
+
+            if (currentWord.zone === 'green') {
+                badgeEl.className = "px-2.5 py-0.5 rounded-md text-[11px] font-semibold tracking-wide border uppercase bg-emerald-950/60 text-emerald-400 border-emerald-500/40";
+                badgeEl.textContent = "🟢 ZIELONE (Utrwalanie)";
+            } else if (currentWord.zone === 'yellow') {
+                badgeEl.className = "px-2.5 py-0.5 rounded-md text-[11px] font-semibold tracking-wide border uppercase bg-amber-950/60 text-amber-400 border-amber-500/40";
+                badgeEl.textContent = "🟡 ŻÓŁTE (Z czerwonych)";
+            } else if (currentWord.zone === 'red') {
+                badgeEl.className = "px-2.5 py-0.5 rounded-md text-[11px] font-semibold tracking-wide border uppercase bg-rose-950/60 text-rose-400 border-rose-500/40";
+                badgeEl.textContent = `🔴 CZERWONE (Błędy: ${currentWord.errors})`;
+            } else {
+                badgeEl.className = "px-2.5 py-0.5 rounded-md text-[11px] font-semibold tracking-wide border uppercase bg-slate-800 text-slate-400 border-slate-700";
+                badgeEl.textContent = "NOWE SŁÓWKO";
+            }
+
+            if (direction === 'en-to-pl') {
+                promptSubEl.textContent = "Przetłumacz na język polski:";
+                promptWordEl.textContent = currentWord.en;
+            } else {
+                promptSubEl.textContent = "Przetłumacz na język angielski:";
+                promptWordEl.textContent = currentWord.pl;
+            }
+
+            renderOptionButtons();
+        }
+
+        function renderOptionButtons() {
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+
+            const correctAnswer = direction === 'en-to-pl' ? currentWord.pl : currentWord.en;
+            const chapterWords = activeChapter === 'all' ? words : words.filter(w => w.cat === activeChapter);
+            const poolForDistractors = chapterWords.length >= 4 ? chapterWords : words;
+
+            const others = poolForDistractors.filter(w => w.id !== currentWord.id);
+            const shuffledOthers = [...others].sort(() => Math.random() - 0.5);
+
+            const distractors = [];
+            for (const item of shuffledOthers) {
+                const text = direction === 'en-to-pl' ? item.pl : item.en;
+                if (text !== correctAnswer && !distractors.includes(text)) {
+                    distractors.push(text);
+                }
+                if (distractors.length === 3) break;
+            }
+
+            const options = [correctAnswer, ...distractors].sort(() => Math.random() - 0.5);
+            const letterLabels = ['A', 'B', 'C', 'D'];
+
+            options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.dataset.correct = (optText === correctAnswer) ? 'true' : 'false';
+                btn.className = "option-card w-full p-3.5 sm:p-4 rounded-xl text-left bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-brand-500/50 flex items-center gap-3 transition text-slate-200";
+
+                btn.innerHTML = `
+                    <span class="w-7 h-7 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center font-bold text-xs text-brand-400 shrink-0">
+                        ${letterLabels[idx]}
+                    </span>
+                    <span class="text-xs sm:text-sm font-medium leading-snug break-words">
+                        ${optText}
+                    </span>
+                `;
+
+                btn.onclick = () => handleAnswer(btn, optText === correctAnswer);
+                grid.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selectedBtn, isCorrect) {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            const allButtons = document.querySelectorAll('.option-card');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            const feedbackEl = document.getElementById('feedback-message');
+            const prevZone = currentWord.zone;
+            currentWord.lastAnsweredAt = Date.now();
+
+            if (isCorrect) {
+                selectedBtn.classList.remove('bg-slate-800/80', 'border-slate-700/80');
+                selectedBtn.classList.add('bg-emerald-950/80', 'border-emerald-500', 'text-emerald-200');
+
+                sessionStreak += 1;
+                document.getElementById('streak-count').textContent = sessionStreak;
+                currentWord.corrects += 1;
+
+                if (isQuickReview) quickReviewHits += 1;
+
+                if (prevZone === 'red') {
+                    currentWord.zone = 'yellow';
+                    feedbackEl.textContent = "🟡 Poprawnie! Słówko z Czerwonych przeszło do strefy ŻÓŁTEJ.";
+                    feedbackEl.className = "text-center text-xs min-h-[22px] mt-4 font-semibold text-amber-400";
+                } else if (prevZone === 'yellow') {
+                    currentWord.zone = 'green';
+                    feedbackEl.textContent = "🟢 Brawo! Utrwalone słówko awansowało do strefy ZIELONEJ.";
+                    feedbackEl.className = "text-center text-xs min-h-[22px] mt-4 font-semibold text-emerald-400";
+                } else {
+                    currentWord.zone = 'green';
+                    feedbackEl.textContent = "🟢 Poprawnie! Słówko w strefie ZIELONEJ (do utrwalenia).";
+                    feedbackEl.className = "text-center text-xs min-h-[22px] mt-4 font-semibold text-emerald-400";
+                }
+
+                if (isQuickReview) quickReviewIndex += 1;
+                saveProgress();
+
+                setTimeout(() => {
+                    nextQuestion();
+                }, 600);
+
+            } else {
+                selectedBtn.classList.remove('bg-slate-800/80', 'border-slate-700/80', 'hover:bg-slate-800');
+                selectedBtn.classList.add('bg-rose-950', 'border-rose-500', 'text-rose-200', 'ring-2', 'ring-rose-500/50');
+                selectedBtn.innerHTML += `<span class="ml-auto text-xs font-bold text-rose-400 flex items-center gap-1 shrink-0"><i class="fa-solid fa-xmark"></i> Źle</span>`;
+
+                allButtons.forEach(btn => {
+                    if (btn.dataset.correct === 'true') {
+                        btn.classList.remove('bg-slate-800/80', 'border-slate-700/80', 'hover:bg-slate-800');
+                        btn.classList.add('bg-emerald-950', 'border-emerald-500', 'text-emerald-200', 'ring-2', 'ring-emerald-500/50');
+                        btn.innerHTML += `<span class="ml-auto text-xs font-bold text-emerald-400 flex items-center gap-1 shrink-0"><i class="fa-solid fa-check"></i> Poprawna</span>`;
+                    }
+                });
+
+                sessionStreak = 0;
+                document.getElementById('streak-count').textContent = sessionStreak;
+                currentWord.errors += 1;
+                currentWord.zone = 'red';
+
+                if (isQuickReview) {
+                    quickReviewMistakes += 1;
+                    quickReviewIndex += 1;
+                }
+
+                feedbackEl.textContent = "🔴 Pomyłka! Słówko trafia do strefy CZERWONEJ.";
+                feedbackEl.className = "text-center text-xs min-h-[22px] mt-4 font-semibold text-rose-400";
+
+                const wrongPanel = document.getElementById('wrong-answer-panel');
+                const correctDisplay = document.getElementById('correct-answer-display');
+                const fullDisplay = document.getElementById('full-translation-display');
+
+                const correctText = direction === 'en-to-pl' ? currentWord.pl : currentWord.en;
+                correctDisplay.textContent = correctText;
+                fullDisplay.textContent = `🇬🇧 ${currentWord.en} ➔ 🇵🇱 ${currentWord.pl}`;
+
+                wrongPanel.classList.remove('hidden');
+                wrongPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                saveProgress();
+                waitingForNext = true;
+
+                const nextBtn = document.getElementById('btn-next-word');
+                if (nextBtn) {
+                    setTimeout(() => nextBtn.focus(), 60);
+                }
+            }
+        }
+
+        function proceedToNextWord() {
+            if (!waitingForNext) return;
+            waitingForNext = false;
+            saveProgress();
+            nextQuestion();
+        }
+
+        function speakWord() {
+            if (!currentWord || !('speechSynthesis' in window)) return;
+            try {
+                window.speechSynthesis.cancel();
+                const text = currentWord.en.split('/')[0].trim();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = 'en-GB';
+                utter.rate = 0.95;
+                window.speechSynthesis.speak(utter);
+            } catch (e) {}
+        }
+
+        function openResetModal() {
+            document.getElementById('reset-modal').classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            document.getElementById('reset-modal').classList.add('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function confirmResetProgress() {
+            closeResetModal();
+            if (activeStudentNr) {
+                localStorage.removeItem(getStudentStorageKey(activeStudentNr));
+                localStorage.removeItem(getStudentSessionKey(activeStudentNr));
+            }
+            sessionStreak = 0;
+            document.getElementById('streak-count').textContent = "0";
+
+            words.forEach(w => {
+                w.zone = 'new';
+                w.errors = 0;
+                w.corrects = 0;
+                w.lastAnsweredAt = null;
+            });
+
+            isQuickReview = false;
+            document.getElementById('quick-review-banner').classList.add('hidden');
+            updateZoneFilterCounts();
+            renderChaptersView();
+            nextQuestion();
+        }
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            const studentModal = document.getElementById('student-modal');
+            if (studentModal && !studentModal.classList.contains('hidden')) {
+                return;
+            }
+
+            if (waitingForNext && (e.key === 'Enter' || e.code === 'Space' || e.key === ' ')) {
+                e.preventDefault();
+                proceedToNextWord();
+                return;
+            }
+
+            if (isProcessing || activeTab !== 'training' || waitingForNext) return;
+
+            const key = e.key.toUpperCase();
+            const keyMap = { '1': 0, 'A': 0, '2': 1, 'B': 1, '3': 2, 'C': 2, '4': 3, 'D': 3 };
+
+            if (key in keyMap) {
+                const index = keyMap[key];
+                const btns = document.querySelectorAll('.option-card');
+                if (btns[index]) {
+                    btns[index].click();
+                }
+            }
+        });
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
